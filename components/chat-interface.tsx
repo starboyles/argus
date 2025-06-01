@@ -118,14 +118,14 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
 
   return (
     <Card className="h-[600px] flex flex-col">
-      <CardHeader>
+      <CardHeader className="flex-shrink-0">
         <CardTitle className="flex items-center gap-2">
           <Bot className="w-5 h-5" />
           Video Chat
         </CardTitle>
       </CardHeader>
 
-      <CardContent className="flex-1 flex flex-col p-0">
+      <CardContent className="flex-1 flex flex-col p-0 min-h-0">
         <ScrollArea className="flex-1 p-4" ref={scrollAreaRef}>
           <div className="space-y-4">
             {messages.map((message) => (
@@ -133,9 +133,9 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
                 key={message.id}
                 className={`flex gap-3 ${message.role === "user" ? "justify-end" : "justify-start"}`}
               >
-                <div className={`flex gap-3 max-w-[80%] ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
+                <div className={`flex gap-3 max-w-[85%] ${message.role === "user" ? "flex-row-reverse" : "flex-row"}`}>
                   <div
-                    className={`w-8 h-8 rounded-full flex items-center justify-center ${
+                    className={`w-8 h-8 rounded-full flex items-center justify-center flex-shrink-0 ${
                       message.role === "user" ? "bg-blue-500" : "bg-gray-500"
                     }`}
                   >
@@ -147,11 +147,11 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
                   </div>
 
                   <div
-                    className={`rounded-lg p-3 ${
+                    className={`rounded-lg p-3 min-w-0 ${
                       message.role === "user" ? "bg-blue-500 text-white" : "bg-gray-100 text-gray-900"
                     }`}
                   >
-                    <p className="text-sm">{message.content}</p>
+                    <p className="text-sm break-words whitespace-pre-wrap">{message.content}</p>
 
                     {message.citations && message.citations.length > 0 && (
                       <div className="mt-3 pt-3 border-t border-gray-300">
@@ -161,10 +161,10 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
                             <button
                               key={index}
                               onClick={() => onSeekTo(citation.startTime)}
-                              className="inline-flex items-center gap-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-700 rounded-full px-3 py-1 transition-colors border border-blue-300"
+                              className="inline-flex items-center gap-1 text-xs bg-blue-500/20 hover:bg-blue-500/30 text-blue-700 rounded-full px-3 py-1 transition-colors border border-blue-300 break-words"
                             >
-                              <Clock className="w-3 h-3" />
-                              {citation.text}
+                              <Clock className="w-3 h-3 flex-shrink-0" />
+                              <span className="truncate">{citation.text}</span>
                             </button>
                           ))}
                         </div>
@@ -179,7 +179,7 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
 
             {isLoading && (
               <div className="flex gap-3">
-                <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center">
+                <div className="w-8 h-8 rounded-full bg-gray-500 flex items-center justify-center flex-shrink-0">
                   <Bot className="w-4 h-4 text-white" />
                 </div>
                 <div className="bg-gray-100 rounded-lg p-3">
@@ -200,7 +200,7 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
           </div>
         </ScrollArea>
 
-        <div className="p-4 border-t">
+        <div className="p-4 border-t flex-shrink-0">
           <form onSubmit={handleSubmit} className="flex gap-2">
             <Input
               value={input}
