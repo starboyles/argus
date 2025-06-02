@@ -55,7 +55,7 @@ export default function LandingPage() {
     router.push("/analyze")
   }
 
-   // Navigate to GitHub
+  // Navigate to GitHub
   const handleGitHub = () => {
     window.open('https://github.com/starboyles/multi-modal-video-analysis-tool', '_blank')
   }
@@ -68,17 +68,17 @@ export default function LandingPage() {
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-badge-percent-icon lucide-badge-percent">
-                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
-                <path d="m15 9-6 6"/>
-                <path d="M9 9h.01"/>
-                <path d="M15 15h.01"/>
+              <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-badge-percent-icon lucide-badge-percent">
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                <path d="m15 9-6 6" />
+                <path d="M9 9h.01" />
+                <path d="M15 15h.01" />
               </svg>
             </div>
             <span className="text-lg font-medium text-gray-900">Argus</span>
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="rounded-full px-6"
             onClick={handleGitHub}
           >
@@ -101,7 +101,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex items-center gap-6 mb-20">
-            <a 
+            <a
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive h-10 has-[>svg]:px-4 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 rounded-xl px-5 text-base"
               data-slot="button"
               href="/analyze"
@@ -202,7 +202,7 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-12">
           <div className="text-center">
             <div className="w-14 sm:w-16 h-14 sm:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
@@ -248,13 +248,21 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-            <div className="flex items-center gap-2">
-              <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
-                <Play className="w-3 h-3 text-white fill-white" />
+            <div className="flex items-center gap-4">
+              <div className="flex items-center gap-2">
+                <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-badge-percent-icon lucide-badge-percent">
+                    <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z" />
+                    <path d="m15 9-6 6" />
+                    <path d="M9 9h.01" />
+                    <path d="M15 15h.01" />
+                  </svg>
+                </div>
+                <span className="text-foreground text-sm font-medium">Argus</span>
               </div>
-              <span className="text-gray-600 text-sm sm:text-base">© 2025 VideoAI, All rights reserved</span>
+              <span className="text-gray-600 text-xs">© 2025 Argus, All rights reserved</span>
             </div>
             <div className="flex items-center gap-4 sm:gap-8 text-gray-600 text-sm sm:text-base">
               <button className="hover:text-gray-900">GitHub</button>
