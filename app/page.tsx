@@ -55,54 +55,60 @@ export default function LandingPage() {
     router.push("/analyze")
   }
 
-  // Navigate to GitHub
+   // Navigate to GitHub
   const handleGitHub = () => {
-    window.open("https://github.com/starboyles/multi-modal-video-analysis-tool", "_blank")
+    window.open('https://github.com/starboyles/multi-modal-video-analysis-tool', '_blank')
   }
+
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-100">
-        <div className="max-w-5xl mx-auto px-12 py-6 flex items-center justify-between">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
               <Play className="w-4 h-4 text-white fill-white" />
             </div>
             <span className="text-lg font-medium text-gray-900">VideoAI</span>
           </div>
-          <Button variant="outline" className="rounded-full px-6" onClick={handleGitHub}>
+          <Button 
+            variant="outline" 
+            className="rounded-full px-6"
+            onClick={handleGitHub}
+          >
             <Github className="w-4 h-4 ml-2 mr-2" />
           </Button>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-5xl mx-auto px-12 py-24">
-        <div className="max-w-3xl">
-          <h1 className="text-6xl font-medium text-gray-900 leading-tight mb-8">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="max-w-4xl">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-gray-900 leading-tight mb-6">
             Your videos,
             <br />
             reimagined with AI
           </h1>
-          <p className="text-xl text-gray-600 leading-relaxed mb-16 max-w-2xl">
+          <p className="text-lg sm:text-xl text-gray-600 leading-relaxed mb-8 sm:mb-12 max-w-2xl">
             The intelligent video analysis platform with AI-powered chat. Upload any YouTube video and get instant
             insights, section breakdowns, and interactive conversations about the content.
           </p>
 
           <div className="flex items-center gap-6 mb-20">
-            <Button
-              className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-8 py-3 text-base font-medium"
-              onClick={handleGetStarted}
+            <a 
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive h-10 has-[>svg]:px-4 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 rounded-xl px-5 text-base"
+              data-slot="button"
+              href="/analyze"
             >
-              Get Started
-            </Button>
+              <span className="text-nowrap">Get Started</span>
+            </a>
             <button className="text-gray-600 hover:text-gray-900 text-base font-medium">Learn More</button>
           </div>
 
           {/* Video Input */}
-          <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 max-w-2xl">
-            <h3 className="text-lg font-medium text-gray-900 mb-6">Try it now</h3>
+          <div className="bg-gray-50 rounded-2xl p-6 sm:p-8 border border-gray-100">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Try it now</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
                 <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -138,29 +144,29 @@ export default function LandingPage() {
       </section>
 
       {/* Preview Section */}
-      <section className="max-w-6xl mx-auto px-12 pb-24">
-        <div className="bg-gray-900 rounded-3xl p-8 overflow-hidden">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
+        <div className="bg-gray-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 min-h-[400px] sm:h-[500px]">
             {/* Video Player Preview */}
-            <div className="lg:col-span-2 bg-gray-800 rounded-2xl flex items-center justify-center">
-              <div className="text-center text-gray-400">
-                <Play className="w-16 h-16 mx-auto mb-4 opacity-50" />
-                <p className="text-lg">Video Player Interface</p>
+            <div className="lg:col-span-2 bg-gray-800 rounded-xl sm:rounded-2xl flex items-center justify-center">
+              <div className="text-center text-gray-400 p-4">
+                <Play className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-base sm:text-lg">Video Player Interface</p>
                 <p className="text-sm opacity-75">Interactive video with AI-powered analysis</p>
               </div>
             </div>
 
             {/* Chat Preview */}
-            <div className="bg-white rounded-2xl p-6 flex flex-col">
-              <div className="flex items-center justify-between mb-6">
+            <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col">
+              <div className="flex items-center justify-between mb-4 sm:mb-6">
                 <h3 className="font-medium text-gray-900">Video Chat</h3>
                 <Button size="sm" className="bg-gray-900 text-white rounded-full px-3">
                   New Chat
                 </Button>
               </div>
 
-              <div className="flex-1 space-y-4">
-                <div className="bg-gray-900 text-white rounded-2xl px-4 py-3 ml-8">
+              <div className="flex-1 space-y-3 sm:space-y-4">
+                <div className="bg-gray-900 text-white rounded-2xl px-3 sm:px-4 py-2 sm:py-3 ml-4 sm:ml-8">
                   <p className="text-sm">What are the main topics covered in this video?</p>
                 </div>
 
@@ -169,7 +175,7 @@ export default function LandingPage() {
                   structures. The main sections are:
                 </div>
 
-                <div className="bg-blue-50 rounded-xl p-4 space-y-2">
+                <div className="bg-blue-50 rounded-xl p-3 sm:p-4 space-y-2">
                   <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
                     <Clock className="w-4 h-4" />
                     Referenced timestamps
@@ -191,44 +197,44 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-5xl mx-auto px-12 py-24">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-12">
           <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <MessageSquare className="w-8 h-8 text-gray-700" />
+            <div className="w-14 sm:w-16 h-14 sm:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <MessageSquare className="w-7 sm:w-8 h-7 sm:h-8 text-gray-700" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-4">AI-Powered Chat</h3>
-            <p className="text-gray-600 leading-relaxed">
+            <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-3 sm:mb-4">AI-Powered Chat</h3>
+            <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
               Interactive conversations about video content with intelligent responses and timestamp citations.
             </p>
           </div>
 
           <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Clock className="w-8 h-8 text-gray-700" />
+            <div className="w-14 sm:w-16 h-14 sm:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Clock className="w-7 sm:w-8 h-7 sm:h-8 text-gray-700" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-4">Smart Sections</h3>
-            <p className="text-gray-600 leading-relaxed">
+            <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-3 sm:mb-4">Smart Sections</h3>
+            <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
               Automatic video segmentation with intelligent timestamps and clickable navigation.
             </p>
           </div>
 
           <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Search className="w-8 h-8 text-gray-700" />
+            <div className="w-14 sm:w-16 h-14 sm:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Search className="w-7 sm:w-8 h-7 sm:h-8 text-gray-700" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-4">Visual Search</h3>
-            <p className="text-gray-600 leading-relaxed">
+            <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-3 sm:mb-4">Visual Search</h3>
+            <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
               Find specific moments in videos using natural language descriptions of visual content.
             </p>
           </div>
 
           <div className="text-center">
-            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
-              <Youtube className="w-8 h-8 text-gray-700" />
+            <div className="w-14 sm:w-16 h-14 sm:h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-4 sm:mb-6">
+              <Youtube className="w-7 sm:w-8 h-7 sm:h-8 text-gray-700" />
             </div>
-            <h3 className="text-xl font-medium text-gray-900 mb-4">YouTube Integration</h3>
-            <p className="text-gray-600 leading-relaxed">
+            <h3 className="text-lg sm:text-xl font-medium text-gray-900 mb-3 sm:mb-4">YouTube Integration</h3>
+            <p className="text-gray-600 leading-relaxed text-sm sm:text-base">
               Seamless integration with YouTube videos while maintaining privacy and control over your data.
             </p>
           </div>
@@ -237,17 +243,19 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-100">
-        <div className="max-w-5xl mx-auto px-12 py-8 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
-              <Play className="w-3 h-3 text-white fill-white" />
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div className="flex items-center gap-2">
+              <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+                <Play className="w-3 h-3 text-white fill-white" />
+              </div>
+              <span className="text-gray-600 text-sm sm:text-base">© 2025 VideoAI, All rights reserved</span>
             </div>
-            <span className="text-gray-600">© 2025 VideoAI, All rights reserved</span>
-          </div>
-          <div className="flex items-center gap-8 text-gray-600">
-            <button className="hover:text-gray-900">GitHub</button>
-            <button className="hover:text-gray-900">Privacy Policy</button>
-            <button className="hover:text-gray-900">Terms of Service</button>
+            <div className="flex items-center gap-4 sm:gap-8 text-gray-600 text-sm sm:text-base">
+              <button className="hover:text-gray-900">GitHub</button>
+              <button className="hover:text-gray-900">Privacy Policy</button>
+              <button className="hover:text-gray-900">Terms of Service</button>
+            </div>
           </div>
         </div>
       </footer>
