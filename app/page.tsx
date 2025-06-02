@@ -1,21 +1,16 @@
 "use client"
 
 import type React from "react"
+
 import { useState } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Badge } from "@/components/ui/badge"
-import { Alert, AlertDescription } from "@/components/ui/alert"
-import { Youtube, Loader2, Sparkles, CheckCircle, AlertCircle } from "lucide-react"
-import { cn } from "@/lib/utils"
+import { Play, MessageSquare, Search, Clock, Youtube, Upload, Loader2, Github } from "lucide-react"
 
-export default function HomePage() {
+export default function LandingPage() {
   const [videoUrl, setVideoUrl] = useState("")
   const [isProcessing, setIsProcessing] = useState(false)
-  const [error, setError] = useState("")
-  const [isValidUrl, setIsValidUrl] = useState(false)
   const router = useRouter()
 
   const extractVideoId = (url: string) => {
@@ -24,40 +19,16 @@ export default function HomePage() {
     return match ? match[1] : null
   }
 
-  const validateUrl = (url: string) => {
-    if (!url) {
-      setIsValidUrl(false)
-      setError("")
-      return
-    }
-
-    const videoId = extractVideoId(url)
-    if (videoId) {
-      setIsValidUrl(true)
-      setError("")
-    } else {
-      setIsValidUrl(false)
-      setError("Please enter a valid YouTube URL")
-    }
-  }
-
-  const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const url = e.target.value
-    setVideoUrl(url)
-    validateUrl(url)
-  }
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     const videoId = extractVideoId(videoUrl)
 
     if (!videoId) {
-      setError("Please enter a valid YouTube URL")
+      alert("Please enter a valid YouTube URL")
       return
     }
 
     setIsProcessing(true)
-    setError("")
 
     try {
       const response = await fetch("/api/process-video", {
@@ -73,87 +44,86 @@ export default function HomePage() {
       }
     } catch (error) {
       console.error("Error processing video:", error)
-      setError("Failed to process video. Please try again.")
+      alert("Failed to process video. Please try again.")
     } finally {
       setIsProcessing(false)
     }
   }
 
+  // Navigate to main analysis page
+  const handleGetStarted = () => {
+    router.push('/analyze')
+  }
+
+   // Navigate to GitHub
+  const handleGitHub = () => {
+    window.open('https://github.com/starboyles/multi-modal-video-analysis-tool', '_blank')
+  }
+
+
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100 flex items-center justify-center p-4">
-      <div className="w-full max-w-lg space-y-8">
-        {/* Header Section */}
-        <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl shadow-lg">
-            <Youtube className="w-8 h-8 text-white" />
+    <div className="min-h-screen bg-white">
+      {/* Header */}
+      <header className="border-b border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
+              <Play className="w-4 h-4 text-white fill-white" />
+            </div>
+            <span className="text-lg font-medium text-gray-900">VideoAI</span>
           </div>
-          <div className="space-y-2">
-            <h1 className="text-3xl font-bold tracking-tight text-slate-900">Video Analysis</h1>
-            <p className="text-slate-600 max-w-md mx-auto leading-relaxed">
-              Transform any YouTube video into an interactive conversation. Analyze content, extract insights, and chat
-              with your videos.
-            </p>
-          </div>
-          <Badge variant="secondary" className="inline-flex items-center gap-1.5">
-            <Sparkles className="w-3 h-3" />
-            AI-Powered Analysis
-          </Badge>
+          <Button 
+            variant="outline" 
+            className="rounded-full px-6"
+            onClick={handleGitHub}
+          >
+            <Github className="w-4 h-4 ml-2 mr-2" />
+          </Button>
         </div>
+      </header>
 
-        {/* Main Card */}
-        <Card className="border-0 shadow-xl bg-white/80 backdrop-blur-sm">
-          <CardHeader className="pb-6">
-            <CardTitle className="text-xl font-semibold text-center">Get Started</CardTitle>
-            <CardDescription className="text-center">Paste your YouTube video URL below to begin</CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
+      {/* Hero Section */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <div className="max-w-4xl">
+          <h1 className="text-6xl font-medium text-gray-900 leading-tight mb-6">
+            Your videos,
+            <br />
+            reimagined with AI
+          </h1>
+          <p className="text-xl text-gray-600 leading-relaxed mb-12 max-w-2xl">
+            The intelligent video analysis platform with AI-powered chat. Upload any YouTube video and get instant
+            insights, section breakdowns, and interactive conversations about the content.
+          </p>
+
+          <div className="flex items-center gap-4 mb-16">
+            <a 
+              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive h-10 has-[>svg]:px-4 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 rounded-xl px-5 text-base"
+              href="/analyze"
+            >
+              <span className="text-nowrap">Get Started</span>
+            </a>
+            <button className="text-gray-600 hover:text-gray-900 text-base font-medium">Learn More</button>
+          </div>
+
+          {/* Video Input */}
+          <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Try it now</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="space-y-2">
-                <label htmlFor="video-url" className="text-sm font-medium text-slate-700">
-                  YouTube Video URL
-                </label>
-                <div className="relative">
-                  <Input
-                    id="video-url"
-                    type="url"
-                    placeholder="https://www.youtube.com/watch?v=..."
-                    value={videoUrl}
-                    onChange={handleUrlChange}
-                    disabled={isProcessing}
-                    className={cn(
-                      "pl-4 pr-10 h-12 text-base transition-all duration-200",
-                      isValidUrl && "border-green-300 bg-green-50/50",
-                      error && "border-red-300 bg-red-50/50",
-                    )}
-                  />
-                  {videoUrl && (
-                    <div className="absolute right-3 top-1/2 -translate-y-1/2">
-                      {isValidUrl ? (
-                        <CheckCircle className="w-5 h-5 text-green-500" />
-                      ) : error ? (
-                        <AlertCircle className="w-5 h-5 text-red-500" />
-                      ) : null}
-                    </div>
-                  )}
-                </div>
+              <div className="relative">
+                <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
+                <Input
+                  type="url"
+                  placeholder="Paste any YouTube video URL..."
+                  value={videoUrl}
+                  onChange={(e) => setVideoUrl(e.target.value)}
+                  className="pl-12 pr-4 py-4 text-base border-gray-200 focus:border-gray-300 focus:ring-0 rounded-xl"
+                  disabled={isProcessing}
+                />
               </div>
-
-              {error && (
-                <Alert variant="destructive" className="border-red-200 bg-red-50">
-                  <AlertCircle className="h-4 w-4" />
-                  <AlertDescription>{error}</AlertDescription>
-                </Alert>
-              )}
-
               <Button
                 type="submit"
-                className={cn(
-                  "w-full h-12 text-base font-medium transition-all duration-200 text-white",
-                  "bg-black hover:bg-gray-900",
-                  "shadow-lg hover:shadow-xl transform hover:-translate-y-0.5",
-                  isProcessing && "cursor-not-allowed",
-                )}
-                disabled={isProcessing || !isValidUrl}
+                disabled={isProcessing || !videoUrl}
+                className="w-full bg-gray-900 hover:bg-gray-800 text-white rounded-xl py-4 text-base font-medium"
               >
                 {isProcessing ? (
                   <>
@@ -162,38 +132,130 @@ export default function HomePage() {
                   </>
                 ) : (
                   <>
-                    <Sparkles className="w-5 h-5 mr-2" />
-                    Start Analysis
+                    <Upload className="w-5 h-5 mr-2" />
+                    Analyze Video
                   </>
                 )}
               </Button>
             </form>
+          </div>
+        </div>
+      </section>
 
-            {/* Features List */}
-            <div className="pt-4 border-t border-slate-100">
-              <div className="grid grid-cols-1 gap-3 text-sm text-slate-600">
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                  <span>Extract key insights and summaries</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                  <span>Interactive Q&A with video content</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-1.5 h-1.5 bg-red-500 rounded-full"></div>
-                  <span>Timestamp-based navigation</span>
-                </div>
+      {/* Preview Section */}
+      <section className="max-w-7xl mx-auto px-6 pb-20">
+        <div className="bg-gray-900 rounded-3xl p-8 overflow-hidden">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
+            {/* Video Player Preview */}
+            <div className="lg:col-span-2 bg-gray-800 rounded-2xl flex items-center justify-center">
+              <div className="text-center text-gray-400">
+                <Play className="w-16 h-16 mx-auto mb-4 opacity-50" />
+                <p className="text-lg">Video Player Interface</p>
+                <p className="text-sm opacity-75">Interactive video with AI-powered analysis</p>
               </div>
             </div>
-          </CardContent>
-        </Card>
 
-        {/* Footer */}
-        <p className="text-center text-sm text-slate-500">
-          Supports all public YouTube videos • Processing typically takes fewer seconds
-        </p>
-      </div>
+            {/* Chat Preview */}
+            <div className="bg-white rounded-2xl p-6 flex flex-col">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="font-medium text-gray-900">Video Chat</h3>
+                <Button size="sm" className="bg-gray-900 text-white rounded-full px-3">
+                  New Chat
+                </Button>
+              </div>
+
+              <div className="flex-1 space-y-4">
+                <div className="bg-gray-900 text-white rounded-2xl px-4 py-3 ml-8">
+                  <p className="text-sm">What are the main topics covered in this video?</p>
+                </div>
+
+                <div className="text-gray-700 text-sm leading-relaxed">
+                  This video covers several key programming concepts including variables, functions, and data
+                  structures. The main sections are:
+                </div>
+
+                <div className="bg-blue-50 rounded-xl p-4 space-y-2">
+                  <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
+                    <Clock className="w-4 h-4" />
+                    Referenced timestamps
+                  </div>
+                  <div className="space-y-1">
+                    <div className="text-sm text-blue-700">2:15 - Introduction</div>
+                    <div className="text-sm text-blue-700">5:30 - Core Concepts</div>
+                    <div className="text-sm text-blue-700">12:45 - Examples</div>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-4">
+                <Input placeholder="Ask anything..." className="rounded-xl border-gray-200" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Features Section */}
+      <section className="max-w-7xl mx-auto px-6 py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <MessageSquare className="w-8 h-8 text-gray-700" />
+            </div>
+            <h3 className="text-xl font-medium text-gray-900 mb-4">AI-Powered Chat</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Interactive conversations about video content with intelligent responses and timestamp citations.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Clock className="w-8 h-8 text-gray-700" />
+            </div>
+            <h3 className="text-xl font-medium text-gray-900 mb-4">Smart Sections</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Automatic video segmentation with intelligent timestamps and clickable navigation.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Search className="w-8 h-8 text-gray-700" />
+            </div>
+            <h3 className="text-xl font-medium text-gray-900 mb-4">Visual Search</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Find specific moments in videos using natural language descriptions of visual content.
+            </p>
+          </div>
+
+          <div className="text-center">
+            <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+              <Youtube className="w-8 h-8 text-gray-700" />
+            </div>
+            <h3 className="text-xl font-medium text-gray-900 mb-4">YouTube Integration</h3>
+            <p className="text-gray-600 leading-relaxed">
+              Seamless integration with YouTube videos while maintaining privacy and control over your data.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Footer */}
+      <footer className="border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
+              <Play className="w-3 h-3 text-white fill-white" />
+            </div>
+            <span className="text-gray-600">© 2025 VideoAI, All rights reserved</span>
+          </div>
+          <div className="flex items-center gap-8 text-gray-600">
+            <button className="hover:text-gray-900">GitHub</button>
+            <button className="hover:text-gray-900">Privacy Policy</button>
+            <button className="hover:text-gray-900">Terms of Service</button>
+          </div>
+        </div>
+      </footer>
     </div>
   )
 }
