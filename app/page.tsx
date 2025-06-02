@@ -55,7 +55,7 @@ export default function LandingPage() {
     router.push('/analyze')
   }
 
-   // Navigate to GitHub
+  // Navigate to GitHub
   const handleGitHub = () => {
     window.open('https://github.com/starboyles/multi-modal-video-analysis-tool', '_blank')
   }
@@ -72,12 +72,12 @@ export default function LandingPage() {
             </div>
             <span className="text-lg font-medium text-gray-900">VideoAI</span>
           </div>
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="rounded-full px-6"
             onClick={handleGitHub}
           >
-            <Github className="w-4 h-4 ml-2 mr-2" />
+            <Github className="w-4 h-4 mr-2" />
           </Button>
         </div>
       </header>
@@ -96,7 +96,7 @@ export default function LandingPage() {
           </p>
 
           <div className="flex items-center gap-4 mb-16">
-            <a 
+            <a
               className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive h-10 has-[>svg]:px-4 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 rounded-xl px-5 text-base"
               href="/analyze"
             >
