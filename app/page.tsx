@@ -84,7 +84,7 @@ export default function HomePage() {
       <div className="w-full max-w-lg space-y-8">
         {/* Header Section */}
         <div className="text-center space-y-4">
-          <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl shadow-lg">
+          <div className="inline-flex items-center justify-center w-16 h-16 bg-black rounded-2xl shadow-lg">
             <Youtube className="w-8 h-8 text-white" />
           </div>
           <div className="space-y-2">
@@ -148,8 +148,8 @@ export default function HomePage() {
               <Button
                 type="submit"
                 className={cn(
-                  "w-full h-12 text-base font-medium transition-all duration-200",
-                  "bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700",
+                  "w-full h-12 text-base font-medium transition-all duration-200 text-white",
+                  "bg-black hover:bg-gray-900",
                   "shadow-lg hover:shadow-xl transform hover:-translate-y-0.5",
                   isProcessing && "cursor-not-allowed",
                 )}
