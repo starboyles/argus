@@ -65,12 +65,17 @@ export default function LandingPage() {
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
-              <Play className="w-4 h-4 text-white fill-white" />
+            <svg xmlns="http://www.w3.org/2000/svg" width="100" height="100" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-badge-percent-icon lucide-badge-percent">
+                <path d="M3.85 8.62a4 4 0 0 1 4.78-4.77 4 4 0 0 1 6.74 0 4 4 0 0 1 4.78 4.78 4 4 0 0 1 0 6.74 4 4 0 0 1-4.77 4.78 4 4 0 0 1-6.75 0 4 4 0 0 1-4.78-4.77 4 4 0 0 1 0-6.76Z"/>
+                <path d="m15 9-6 6"/>
+                <path d="M9 9h.01"/>
+                <path d="M15 15h.01"/>
+              </svg>
             </div>
-            <span className="text-lg font-medium text-gray-900">VideoAI</span>
+            <span className="text-lg font-medium text-gray-900">Argus</span>
           </div>
           <Button 
             variant="outline" 
@@ -83,7 +88,7 @@ export default function LandingPage() {
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12 sm:py-16 lg:py-20">
         <div className="max-w-4xl">
           <h1 className="text-4xl sm:text-5xl lg:text-6xl font-medium text-gray-900 leading-tight mb-6">
             Your videos,
@@ -144,7 +149,7 @@ export default function LandingPage() {
       </section>
 
       {/* Preview Section */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
+      <section className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
         <div className="bg-gray-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 min-h-[400px] sm:h-[500px]">
             {/* Video Player Preview */}
