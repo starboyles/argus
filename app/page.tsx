@@ -52,62 +52,57 @@ export default function LandingPage() {
 
   // Navigate to main analysis page
   const handleGetStarted = () => {
-    router.push('/analyze')
+    router.push("/analyze")
   }
 
   // Navigate to GitHub
   const handleGitHub = () => {
-    window.open('https://github.com/starboyles/multi-modal-video-analysis-tool', '_blank')
+    window.open("https://github.com/starboyles/multi-modal-video-analysis-tool", "_blank")
   }
-
 
   return (
     <div className="min-h-screen bg-white">
       {/* Header */}
       <header className="border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-12 py-6 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-8 h-8 bg-black rounded-full flex items-center justify-center">
               <Play className="w-4 h-4 text-white fill-white" />
             </div>
             <span className="text-lg font-medium text-gray-900">VideoAI</span>
           </div>
-          <Button
-            variant="outline"
-            className="rounded-full px-6"
-            onClick={handleGitHub}
-          >
+          <Button variant="outline" className="rounded-full px-6" onClick={handleGitHub}>
             <Github className="w-4 h-4 mr-2" />
           </Button>
         </div>
       </header>
 
       {/* Hero Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="max-w-4xl">
-          <h1 className="text-6xl font-medium text-gray-900 leading-tight mb-6">
+      <section className="max-w-5xl mx-auto px-12 py-24">
+        <div className="max-w-3xl">
+          <h1 className="text-6xl font-medium text-gray-900 leading-tight mb-8">
             Your videos,
             <br />
             reimagined with AI
           </h1>
-          <p className="text-xl text-gray-600 leading-relaxed mb-12 max-w-2xl">
+          <p className="text-xl text-gray-600 leading-relaxed mb-16 max-w-2xl">
             The intelligent video analysis platform with AI-powered chat. Upload any YouTube video and get instant
             insights, section breakdowns, and interactive conversations about the content.
           </p>
 
-          <div className="flex items-center gap-4 mb-16">
-            <a
-              className="inline-flex items-center justify-center gap-2 whitespace-nowrap font-medium transition-all disabled:pointer-events-none disabled:opacity-50 [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 shrink-0 [&_svg]:shrink-0 outline-none focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive h-10 has-[>svg]:px-4 bg-primary text-primary-foreground shadow-xs hover:bg-primary/90 rounded-xl px-5 text-base"
-              href="/analyze"
+          <div className="flex items-center gap-6 mb-20">
+            <Button
+              className="bg-gray-900 hover:bg-gray-800 text-white rounded-full px-8 py-3 text-base font-medium"
+              onClick={handleGetStarted}
             >
-              <span className="text-nowrap">Get Started</span>
-            </a>
+              Get Started
+            </Button>
             <button className="text-gray-600 hover:text-gray-900 text-base font-medium">Learn More</button>
           </div>
 
           {/* Video Input */}
-          <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100">
-            <h3 className="text-lg font-medium text-gray-900 mb-4">Try it now</h3>
+          <div className="bg-gray-50 rounded-2xl p-8 border border-gray-100 max-w-2xl">
+            <h3 className="text-lg font-medium text-gray-900 mb-6">Try it now</h3>
             <form onSubmit={handleSubmit} className="space-y-4">
               <div className="relative">
                 <Youtube className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -143,7 +138,7 @@ export default function LandingPage() {
       </section>
 
       {/* Preview Section */}
-      <section className="max-w-7xl mx-auto px-6 pb-20">
+      <section className="max-w-6xl mx-auto px-12 pb-24">
         <div className="bg-gray-900 rounded-3xl p-8 overflow-hidden">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 h-[500px]">
             {/* Video Player Preview */}
@@ -196,8 +191,8 @@ export default function LandingPage() {
       </section>
 
       {/* Features Section */}
-      <section className="max-w-7xl mx-auto px-6 py-20">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+      <section className="max-w-5xl mx-auto px-12 py-24">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-16">
           <div className="text-center">
             <div className="w-16 h-16 bg-gray-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
               <MessageSquare className="w-8 h-8 text-gray-700" />
@@ -242,7 +237,7 @@ export default function LandingPage() {
 
       {/* Footer */}
       <footer className="border-t border-gray-100">
-        <div className="max-w-7xl mx-auto px-6 py-8 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-12 py-8 flex items-center justify-between">
           <div className="flex items-center gap-2">
             <div className="w-6 h-6 bg-black rounded-full flex items-center justify-center">
               <Play className="w-3 h-3 text-white fill-white" />
