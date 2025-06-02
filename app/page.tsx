@@ -72,7 +72,7 @@ export default function LandingPage() {
             <span className="text-lg font-medium text-gray-900">VideoAI</span>
           </div>
           <Button variant="outline" className="rounded-full px-6" onClick={handleGitHub}>
-            <Github className="w-4 h-4 mr-2" />
+            <Github className="w-4 h-4 ml-2 mr-2" />
           </Button>
         </div>
       </header>
