@@ -5,8 +5,14 @@ FROM node:18-alpine
 RUN apk add --no-cache \
     python3 \
     py3-pip \
-    ffmpeg \
-    && pip3 install yt-dlp
+    python3-dev \
+    py3-virtualenv \
+    ffmpeg
+
+# Create and use virtual environment for Python packages
+RUN python3 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+RUN pip install yt-dlp
 
 # Set working directory
 WORKDIR /app
