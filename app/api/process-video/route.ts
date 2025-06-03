@@ -4,9 +4,9 @@ import { YoutubeTranscript } from "youtube-transcript"
 
 export async function POST(request: NextRequest) {
   try {
-    const { videoId, url } = await request.json()
+    const { videoId, url, extractFrames = true } = await request.json()
 
-    // Initialize Gemini
+    // Initialize APIs
     const geminiApiKey = process.env.GEMINI_API_KEY
     const youtubeApiKey = process.env.YOUTUBE_API_KEY
 
@@ -24,20 +24,20 @@ export async function POST(request: NextRequest) {
     }
 
     const genAI = new GoogleGenerativeAI(geminiApiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
 
     try {
-      // Get video details from YouTube API if available
+      // Get video metadata
       let videoMetadata = {
         title: "Video Analysis",
-        description: "Processing video with Gemini 2.5",
+        description: "Processing video with advanced multimodal analysis",
         duration: 600
       }
 
       if (youtubeApiKey) {
         try {
           const videoResponse = await fetch(
-            `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${youtubeApiKey}&part=snippet,contentDetails`,
+            `https://www.googleapis.com/youtube/v3/videos?id=${videoId}&key=${youtubeApiKey}&part=snippet,contentDetails`
           )
           const videoData = await videoResponse.json()
 
@@ -54,7 +54,7 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Get transcript using youtube-transcript-api equivalent
+      // Get transcript
       let transcript = ""
       try {
         const transcriptData = await YoutubeTranscript.fetchTranscript(videoId)
@@ -66,8 +66,36 @@ export async function POST(request: NextRequest) {
         transcript = "Transcript not available for this video"
       }
 
-      // Use Gemini 2.5 to analyze the video content and generate intelligent sections
-      const analysisPrompt = `Analyze this YouTube video and create a detailed section breakdown based on the metadata and transcript provided.
+      // Extract representative frames for analysis
+      let keyFrames = []
+      if (extractFrames) {
+        try {
+          console.log("Extracting key frames for video analysis...")
+          const framesResponse = await fetch(`${request.nextUrl.origin}/api/extract-frames`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              videoId, 
+              query: "overview analysis", 
+              maxFrames: 6 
+            })
+          })
+          
+          if (framesResponse.ok) {
+            const framesData = await framesResponse.json()
+            keyFrames = framesData.frames || []
+            console.log(`Extracted ${keyFrames.length} key frames for analysis`)
+          }
+        } catch (frameError) {
+          console.warn("Could not extract frames for analysis:", frameError)
+        }
+      }
+
+      // Create multimodal analysis prompt
+      const analysisContent = []
+      
+      analysisContent.push({
+        text: `Perform comprehensive multimodal video analysis using both transcript and visual content.
 
 Video Title: ${videoMetadata.title}
 Video Description: ${videoMetadata.description}
@@ -76,37 +104,64 @@ Duration: ${Math.floor(videoMetadata.duration / 60)}:${(videoMetadata.duration %
 Transcript:
 ${transcript}
 
-Please provide:
+${keyFrames.length > 0 ? `
+VISUAL ANALYSIS:
+I'm providing ${keyFrames.length} key frames from this video. Analyze these images to understand:
+- Visual content and presentation style
+- Code, diagrams, UI elements shown
+- Tools and applications being demonstrated
+- Visual teaching aids and examples
+- Overall video structure and flow
+
+MULTIMODAL ANALYSIS INSTRUCTIONS:
+Combine the transcript with visual evidence to provide:
+` : 'TRANSCRIPT-ONLY ANALYSIS:\n'}
+
 1. A comprehensive analysis of the video content
 2. 5-7 logical sections with timestamps, titles, and descriptions
-3. Key topics and themes discussed
+3. Key topics and themes discussed${keyFrames.length > 0 ? ' (including visual elements)' : ''}
 4. Important moments or transitions in the content
+5. Technical concepts covered${keyFrames.length > 0 ? ' (both spoken and visually demonstrated)' : ''}
 
 Format your response as JSON with this structure:
 {
-  "analysis": "comprehensive analysis of the video",
+  "analysis": "comprehensive multimodal analysis of the video",
   "sections": [
     {
       "title": "section title",
       "startTime": seconds,
       "endTime": seconds,
-      "description": "detailed description"
+      "description": "detailed description including visual and audio content"
     }
   ],
   "keyTopics": ["topic1", "topic2", ...],
-  "summary": "brief summary of the entire video"
+  "summary": "brief summary of the entire video",
+  "visualElements": ["visual element 1", "visual element 2", ...],
+  "technicalConcepts": ["concept 1", "concept 2", ...]
 }`
+      })
 
-      console.log(`Analyzing video with Gemini 2.5: ${videoMetadata.title}`)
+      // Add key frames to analysis
+      if (keyFrames.length > 0) {
+        keyFrames.forEach((frame: any) => {
+          analysisContent.push({
+            inlineData: {
+              data: frame.base64Data,
+              mimeType: "image/jpeg"
+            }
+          })
+        })
+      }
 
-      const result = await model.generateContent(analysisPrompt)
+      console.log(`Analyzing video with ${keyFrames.length > 0 ? 'multimodal' : 'text-only'} Gemini: ${videoMetadata.title}`)
+
+      const result = await model.generateContent(analysisContent)
       const response = await result.response
       const analysisText = response.text()
 
       // Parse Gemini's response
       let geminiAnalysis
       try {
-        // Extract JSON from the response (Gemini might include additional text)
         const jsonMatch = analysisText.match(/\{[\s\S]*\}/)
         if (jsonMatch) {
           geminiAnalysis = JSON.parse(jsonMatch[0])
@@ -119,11 +174,13 @@ Format your response as JSON with this structure:
           analysis: analysisText,
           sections: generateFallbackSections(videoMetadata.title, videoMetadata.description, videoMetadata.duration),
           keyTopics: extractTopicsFromText(videoMetadata.title + " " + videoMetadata.description),
-          summary: "AI-generated analysis of video content"
+          summary: "AI-generated analysis of video content",
+          visualElements: keyFrames.length > 0 ? ["Visual content analyzed"] : [],
+          technicalConcepts: []
         }
       }
 
-      // Ensure sections have proper IDs and are within video duration
+      // Process sections
       const sections = geminiAnalysis.sections.map((section: any, index: number) => ({
         id: `section-${index + 1}`,
         title: section.title || `Section ${index + 1}`,
@@ -142,15 +199,18 @@ Format your response as JSON with this structure:
         analysis: geminiAnalysis.analysis,
         keyTopics: geminiAnalysis.keyTopics || [],
         summary: geminiAnalysis.summary,
+        visualElements: geminiAnalysis.visualElements || [],
+        technicalConcepts: geminiAnalysis.technicalConcepts || [],
         processed: true,
-        aiModel: "gemini-2.5-flash"
+        aiModel: "gemini-2.0-flash-exp",
+        analysisType: keyFrames.length > 0 ? "multimodal" : "text-only",
+        framesAnalyzed: keyFrames.length
       }
 
       return NextResponse.json(processedVideoData)
 
     } catch (geminiError) {
       console.error("Gemini processing error:", geminiError)
-      // Fallback to basic processing
       return NextResponse.json({
         id: videoId,
         title: "Video Analysis (Processing Error)",
@@ -168,14 +228,13 @@ Format your response as JSON with this structure:
   }
 }
 
+// Helper functions remain the same...
 function parseDuration(duration: string): number {
   const match = duration.match(/PT(?:(\d+)H)?(?:(\d+)M)?(?:(\d+)S)?/)
   if (!match) return 0
-
   const hours = Number.parseInt(match[1] || "0")
   const minutes = Number.parseInt(match[2] || "0")
   const seconds = Number.parseInt(match[3] || "0")
-
   return hours * 3600 + minutes * 60 + seconds
 }
 
@@ -215,7 +274,6 @@ function extractTopicsFromText(text: string): string[] {
     topics.push("Discussion", "Interview", "Conversation")
   }
   
-  // Add more topic extraction logic based on common patterns
   return topics.length > 0 ? topics : ["General Content", "Information", "Discussion"]
 }
 
