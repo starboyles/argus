@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
 
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash-exp" })
 
     // Get video data
     const videoResponse = await fetch(`${request.nextUrl.origin}/api/video/${videoId}`)
@@ -47,7 +47,7 @@ export async function POST(request: NextRequest) {
           .join("\n")
       : "No sections available"
 
-    const frameSearchPrompt = `Using Gemini 2.5's advanced video understanding capabilities, analyze this video content to find frames/moments that match the user's visual query.
+    const frameSearchPrompt = `Using Gemini 2.0's advanced video understanding capabilities, analyze this video content to find frames/moments that match the user's visual query.
 
 Video Information:
 - Title: ${title}
@@ -93,7 +93,7 @@ Format as JSON:
 }`
 
     try {
-      // Use Gemini 2.5 for intelligent frame search
+      
       const result = await model.generateContent(frameSearchPrompt)
       const response = await result.response
       const responseText = response.text()
@@ -136,7 +136,7 @@ Format as JSON:
 
       return NextResponse.json({ 
         results: formattedResults,
-        searchMethod: "gemini-2.5-visual",
+        searchMethod: "gemini-2.0-flash-exp",
         query: query,
         totalResults: formattedResults.length
       })
