@@ -132,13 +132,12 @@ export default function LandingPage() {
                 </p>
 
                 <div className="mt-12 flex items-center gap-2">
-                  <div className="bg-foreground/10 rounded-[calc(var(--radius-xl)+0.125rem)] border p-0.5">
+              
                     <Button asChild size="lg" className="rounded-xl px-5 text-base" onClick={handleGetStarted}>
                       <Link href="/analyze">
                         <span className="text-nowrap">Get Started</span>
                       </Link>
                     </Button>
-                  </div>
                   <Button asChild size="lg" variant="ghost" className="h-10.5 rounded-xl px-5 text-base">
                     <Link href="#features">
                       <span className="text-nowrap">Learn More</span>
@@ -244,6 +243,7 @@ export default function LandingPage() {
           </div>
         </section>
 
+        {/* Features Section */}
         {/* Features Section */}
         <section id="features" className="mt-8 px-6 py-12 sm:mt-12 sm:py-16 md:mt-20 lg:py-20">
           <div className="mx-auto max-w-5xl">
