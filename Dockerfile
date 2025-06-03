@@ -21,7 +21,7 @@ WORKDIR /app
 COPY package*.json ./
 
 # Install Node.js dependencies
-RUN npm ci --only=production
+RUN npm install --omit=dev --legacy-peer-deps
 
 # Copy source code
 COPY . .
