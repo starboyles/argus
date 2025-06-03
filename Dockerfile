@@ -7,7 +7,8 @@ RUN apk add --no-cache \
     py3-pip \
     python3-dev \
     py3-virtualenv \
-    ffmpeg
+    ffmpeg \
+    curl
 
 # Create and use virtual environment for Python packages
 RUN python3 -m venv /opt/venv
@@ -20,14 +21,20 @@ WORKDIR /app
 # Copy package files first (for better Docker layer caching)
 COPY package*.json ./
 
-# Install Node.js dependencies
-RUN npm install --omit=dev --legacy-peer-deps
+# Install ALL dependencies (including dev) for build
+RUN npm install --legacy-peer-deps
 
-# Copy source code
+# Copy all source code
 COPY . .
+
+# Temporarily remove the problematic page
+# RUN rm -f app/analyze/page.tsx
 
 # Create temp directory for video processing with proper permissions
 RUN mkdir -p temp && chmod 755 temp
+
+# Set NODE_ENV for build
+ENV NODE_ENV=production
 
 # Build the Next.js application
 RUN npm run build
