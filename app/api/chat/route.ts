@@ -31,9 +31,8 @@ export async function POST(request: NextRequest) {
     // Initialize Gemini
     const genAI = new GoogleGenerativeAI(apiKey)
     
-    // Use gemini-2.0-flash-exp for the latest capabilities
     const model = genAI.getGenerativeModel({ 
-      model: "gemini-2.0-flash-exp", // Latest Gemini 2.0 model with enhanced video understanding
+      model: "gemini-1.5-flash", 
       generationConfig: {
         temperature: 0.3, // Lower temperature for more accurate responses
         topP: 0.8,
@@ -152,7 +151,7 @@ Provide a comprehensive analysis with specific timestamps and detailed explanati
       return NextResponse.json({
         content: assistantResponse,
         citations: citations.slice(0, 5), // Allow more citations
-        model: "gemini-2.0-flash-exp"
+        model: "gemini-1.5-flash"
       })
 
     } catch (geminiError: any) {
