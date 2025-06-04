@@ -132,12 +132,12 @@ export default function LandingPage() {
                 </p>
 
                 <div className="mt-12 flex items-center gap-2">
-              
-                    <Button asChild size="lg" className="rounded-xl px-5 text-base" onClick={handleGetStarted}>
-                      <Link href="/analyze">
-                        <span className="text-nowrap">Get Started</span>
-                      </Link>
-                    </Button>
+
+                  <Button asChild size="lg" className="rounded-xl px-5 text-base" onClick={handleGetStarted}>
+                    <Link href="/analyze">
+                      <span className="text-nowrap">Get Started</span>
+                    </Link>
+                  </Button>
                   <Button asChild size="lg" variant="ghost" className="h-10.5 rounded-xl px-5 text-base">
                     <Link href="#features">
                       <span className="text-nowrap">Learn More</span>
