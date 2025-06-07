@@ -8,7 +8,6 @@ export async function POST(request: NextRequest) {
       videoId,
       videoData,
       currentTime,
-      includeVisuals = true,
     } = await request.json();
 
     // Validate input data
@@ -35,20 +34,63 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Initialize Gemini
+    // Initialize Gemini with optimal settings for text analysis
     const genAI = new GoogleGenerativeAI(apiKey);
 
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-exp",
       generationConfig: {
-        temperature: 0.3, // Lower temperature for more accurate responses
+        temperature: 0.1, // Very low for maximum accuracy and consistency
         topP: 0.8,
         topK: 40,
-        maxOutputTokens: 4096, // Increased for more detailed responses
+        maxOutputTokens: 8192, // Maximum for detailed responses
       },
     });
 
-    // Safely extract video data with defaults
+    // Check for conversational/social messages first
+    const conversationalPatterns = [
+      /^(thank you|thanks|thx)\.?$/i,
+      /^(hello|hi|hey)\.?$/i,
+      /^(goodbye|bye|see you)\.?$/i,
+      /^(you're welcome|welcome)\.?$/i,
+      /^(ok|okay|alright)\.?$/i,
+      /^(got it|understood|makes sense)\.?$/i,
+      /^(cool|nice|great|awesome)\.?$/i
+    ];
+
+    const isConversational = conversationalPatterns.some(pattern => pattern.test(message.trim()));
+
+    if (isConversational) {
+      // Handle conversational responses with proper typing
+      const conversationalResponses: Record<string, string> = {
+        'thank you': "You're welcome! Feel free to ask me anything else about this video.",
+        'thanks': "You're welcome! I'm here if you need any more help with the video content.",
+        'thx': "No problem! Let me know if you have other questions about the video.",
+        'hello': "Hello! I'm ready to help you analyze this video. What would you like to know?",
+        'hi': "Hi there! Ask me anything about this video content.",
+        'hey': "Hey! What can I help you discover in this video?",
+        'goodbye': "Goodbye! Feel free to come back if you have more questions about the video.",
+        'bye': "See you later! Happy learning with your video content.",
+        'ok': "Great! Is there anything specific you'd like to know about this video?",
+        'okay': "Perfect! What else can I help you understand about this video?",
+        'cool': "Glad you found it helpful! Any other questions about the video?",
+        'nice': "Thanks! Let me know if you want to explore more of this video content.",
+        'great': "Wonderful! Feel free to ask about any other parts of the video.",
+        'awesome': "I'm glad I could help! What else would you like to know about this video?"
+      };
+
+      const normalizedMessage = message.toLowerCase().replace(/[.!?]/g, '');
+      const response = conversationalResponses[normalizedMessage] || 
+                      "Thanks! Is there anything specific you'd like to know about this video?";
+
+      return NextResponse.json({
+        content: response,
+        citations: [],
+        model: "gemini-2.0-flash-exp",
+        analysisType: "conversational-response",
+        searchQuery: message
+      });
+    }
     const title = videoData.title || "Unknown Video";
     const description = videoData.description || "No description available";
     const duration = videoData.duration || 0;
@@ -56,187 +98,166 @@ export async function POST(request: NextRequest) {
     const transcript = videoData.transcript || "No transcript available";
     const safeCurrentTime = currentTime || 0;
 
-    let visualFrames = [];
-    if (includeVisuals) {
-      try {
-        console.log("Fetching visual frames for multimodal analysis...");
-        const framesResponse = await fetch(
-          `${request.nextUrl.origin}/api/extract-frames`,
-          {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              videoId,
-              query: message,
-              contextTime: currentTime,
-              maxFrames: 8,
-            }),
-          }
-        );
+    // Build comprehensive sections with timing analysis
+    const enrichedSections = sections.map((section: any, index: number) => {
+      const sectionTitle = section?.title || `Section ${index + 1}`;
+      const startTime = section?.startTime || 0;
+      const endTime = section?.endTime || 0;
+      const sectionDescription = section?.description || "No description";
+      
+      return {
+        index: index + 1,
+        title: sectionTitle,
+        startTime,
+        endTime,
+        duration: endTime - startTime,
+        startFormatted: `${Math.floor(startTime / 60)}:${(startTime % 60).toString().padStart(2, "0")}`,
+        endFormatted: `${Math.floor(endTime / 60)}:${(endTime % 60).toString().padStart(2, "0")}`,
+        description: sectionDescription,
+        transcript: section?.transcript || ""
+      };
+    });
 
-        if (framesResponse.ok) {
-          const framesData = await framesResponse.json();
-          visualFrames = framesData.frames || [];
-          console.log(`Retrieved ${visualFrames.length} frames for analysis`);
-        }
-      } catch (frameError) {
-        console.warn(
-          "Could not fetch frames, continuing with text-only analysis:",
-          frameError
-        );
-      }
-    }
+    const sectionsAnalysis = enrichedSections.length > 0
+      ? enrichedSections
+          .map((section: { index: any; title: any; startFormatted: any; endFormatted: any; duration: number; description: any; transcript: string; }) => 
+            `Section ${section.index}: "${section.title}"
+Time Range: ${section.startFormatted} - ${section.endFormatted} (${Math.floor(section.duration / 60)}m ${section.duration % 60}s)
+Description: ${section.description}
+${section.transcript ? `Transcript Excerpt: ${section.transcript.substring(0, 300)}${section.transcript.length > 300 ? "..." : ""}` : ""}
+---`
+          ).join("\n\n")
+      : "No structured sections available";
 
-    // Build more detailed sections context
-    const sectionsText =
-      sections.length > 0
-        ? sections
-            .map((section: any, index: number) => {
-              const sectionTitle = section?.title || `Section ${index + 1}`;
-              const startTime = section?.startTime || 0;
-              const endTime = section?.endTime || 0;
-              const sectionDescription =
-                section?.description || "No description";
-              const sectionTranscript = section?.transcript || "";
+    // Analyze transcript for programming concepts and patterns
+    const transcriptAnalysis = analyzeTranscriptPatterns(transcript);
 
-              return `${index + 1}. ${sectionTitle} (${Math.floor(
-                startTime / 60
-              )}:${(startTime % 60).toString().padStart(2, "0")} - ${Math.floor(
-                endTime / 60
-              )}:${(endTime % 60).toString().padStart(2, "0")})
-   Description: ${sectionDescription}
-   ${
-     sectionTranscript
-       ? `Content: ${sectionTranscript.substring(0, 500)}${
-           sectionTranscript.length > 500 ? "..." : ""
-         }`
-       : ""
-   }`;
-            })
-            .join("\n\n")
-        : "No sections available";
+    // Create context-aware timestamps around current time
+    const contextWindow = getContextualTimestamps(transcript, safeCurrentTime, 180); // 3-minute window
 
-    // Create multimodal prompt
-    const multimodalContent = []
-    
-    // Add main text prompt
-    multimodalContent.push({
-      text: `You are an expert AI assistant with advanced multimodal video analysis capabilities. Analyze this video using BOTH textual content AND visual frames to provide comprehensive answers.
+    // Build the ultimate analysis prompt
+    const expertPrompt = `You are an expert AI video analyst with deep knowledge of programming, software development, and technical education. You excel at finding precise information in video content and providing detailed, accurate responses with exact timestamps.
 
-VIDEO ANALYSIS CONTEXT:
-Title: "${title}"
-Total Duration: ${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}
-Current Position: ${Math.floor(safeCurrentTime / 60)}:${(safeCurrentTime % 60).toString().padStart(2, "0")}
-Description: ${description}
+COMPREHENSIVE VIDEO CONTEXT:
+═══════════════════════════════════════════════════════════════
 
-STRUCTURED CONTENT:
-${sectionsText}
+📹 TITLE: "${title}"
+⏱️ TOTAL DURATION: ${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}
+📍 CURRENT POSITION: ${Math.floor(safeCurrentTime / 60)}:${(safeCurrentTime % 60).toString().padStart(2, "0")}
+📝 DESCRIPTION: ${description}
 
-COMPLETE TRANSCRIPT:
+STRUCTURAL ANALYSIS:
+${sectionsAnalysis}
+
+CONTENT PATTERN ANALYSIS:
+${transcriptAnalysis}
+
+CONTEXTUAL WINDOW (±3 minutes from current position):
+${contextWindow}
+
+COMPLETE TRANSCRIPT WITH TIMESTAMPS:
 ${transcript}
 
-${visualFrames.length > 0 ? `
-VISUAL FRAMES ANALYSIS:
-I'm providing you with ${visualFrames.length} key frames from this video. Please analyze these images along with the transcript to understand:
-- Code shown on screen (syntax, concepts, IDE interfaces)
-- UI elements, diagrams, charts, presentations  
-- Visual demonstrations and examples
-- Tools and applications being used
-- Presenter gestures and body language
-- Slide content and visual aids
-- Any text or graphics displayed
+EXPERT ANALYSIS INSTRUCTIONS:
+═══════════════════════════════════════════════════════════════
 
-MULTIMODAL ANALYSIS INSTRUCTIONS:
-1. Combine visual evidence from frames with transcript context
-2. When you find relevant content, provide EXACT timestamps in MM:SS format
-3. Describe what's visually happening at each timestamp
-4. Explain how visual content relates to spoken content
-5. Identify visual elements that support or contradict transcript
-6. Note any code, diagrams, or technical content shown visually
-7. Analyze presenter's visual demonstrations and gestures
+🔍 SEARCH METHODOLOGY:
+1. Perform a comprehensive scan of the ENTIRE transcript
+2. Use advanced pattern matching for technical terminology and concepts
+3. Consider variations, synonyms, and related terms
+4. Analyze context around matches for relevance
+5. Cross-reference with section titles and descriptions
 
-` : `
-TEXT-ONLY ANALYSIS (no visual frames available):
-1. Search through the ENTIRE transcript systematically for the requested topic
-2. When you find relevant content, provide EXACT timestamps in MM:SS format
-3. Include brief context about what's being discussed at each timestamp
-4. For programming concepts, explain the specific aspect being covered
+📍 TIMESTAMP PRECISION:
+1. Provide EXACT timestamps in MM:SS format for every relevant mention
+2. Include brief context for what's happening at each timestamp
+3. If a topic spans multiple timeframes, list ALL occurrences
+4. Distinguish between brief mentions vs. detailed explanations
 
-`}
+🧠 TECHNICAL UNDERSTANDING:
+1. Demonstrate deep understanding of programming concepts
+2. Explain the specific aspect being discussed at each timestamp
+3. Identify relationships between different parts of the content
+4. Note progressive complexity or skill building
 
-SEARCH QUERY: ${message}
+💡 COMPREHENSIVE RESPONSE FORMAT:
+1. Start with a summary of findings
+2. List each relevant timestamp with detailed context
+3. Explain the progression or flow of the topic
+4. Note any visual cues mentioned in the transcript (code examples, diagrams, etc.)
+5. If the topic isn't found, explain what WAS searched and suggest related topics that ARE present
 
-Provide a comprehensive ${visualFrames.length > 0 ? 'multimodal' : 'textual'} analysis with specific timestamps and detailed explanations.`
-    })
+SEARCH QUERY: "${message}"
 
-    // Add visual frames to the prompt
-    if (visualFrames.length > 0) {
-      visualFrames.forEach((frame: any) => {
-        multimodalContent.push({
-          inlineData: {
-            data: frame.base64Data,
-            mimeType: "image/jpeg"
-          }
-        })
-      })
-    }
+Provide an exhaustive analysis that demonstrates mastery of both the video content and the requested topic. Be thorough, precise, and educational in your response.`;
 
     try {
-      console.log(`Sending ${visualFrames.length > 0 ? 'multimodal' : 'text-only'} request to Gemini API...`)
+      console.log("Sending optimized text-based request to Gemini API...");
       
-      // Generate response using Gemini
-      const result = await model.generateContent(multimodalContent)
+      // Generate response using enhanced prompt
+      const result = await model.generateContent(expertPrompt);
       
       if (!result.response) {
-        throw new Error("No response from Gemini API")
+        throw new Error("No response from Gemini API");
       }
 
-      const response = result.response
-      let assistantResponse = ""
+      const response = result.response;
+      let assistantResponse = "";
       
       try {
-        assistantResponse = response.text()
+        assistantResponse = response.text();
       } catch (textError) {
-        console.error("Error extracting text from response:", textError)
+        console.error("Error extracting text from response:", textError);
         if (response.candidates && response.candidates[0]?.content?.parts?.[0]?.text) {
-          assistantResponse = response.candidates[0].content.parts[0].text
+          assistantResponse = response.candidates[0].content.parts[0].text;
         } else {
-          throw new Error("Could not extract text from multimodal response")
+          throw new Error("Could not extract text from response");
         }
       }
 
       if (!assistantResponse) {
-        assistantResponse = "I received your question but couldn't generate a response. Please try rephrasing your question."
+        assistantResponse = "I received your question but couldn't generate a response. Please try rephrasing your question.";
       }
 
-      console.log("Gemini multimodal response received successfully")
+      console.log("Expert-level text analysis completed successfully");
 
-      // Enhanced timestamp extraction
-      const timestampRegex = /(\d{1,3}):(\d{2})/g
-      const citations: { text: string; startTime: number; endTime: number }[] = []
-      let match
+      // Advanced timestamp extraction with context validation
+      const timestampRegex = /(\d{1,3}):(\d{2})/g;
+      const citations: { text: string; startTime: number; endTime: number; context?: string }[] = [];
+      let match;
 
       while ((match = timestampRegex.exec(assistantResponse)) !== null) {
-        const minutes = Number.parseInt(match[1], 10)
-        const seconds = Number.parseInt(match[2], 10)
-        const timestamp = minutes * 60 + seconds
+        const minutes = Number.parseInt(match[1], 10);
+        const seconds = Number.parseInt(match[2], 10);
+        const timestamp = minutes * 60 + seconds;
 
         if (timestamp <= duration && !citations.some(c => c.startTime === timestamp)) {
+          // Extract context around the timestamp mention
+          const beforeText = assistantResponse.substring(Math.max(0, match.index - 100), match.index);
+          const afterText = assistantResponse.substring(match.index + match[0].length, Math.min(assistantResponse.length, match.index + match[0].length + 100));
+          
           citations.push({
             text: `${match[1]}:${match[2]}`,
             startTime: timestamp,
-            endTime: Math.min(timestamp + 60, duration),
-          })
+            endTime: Math.min(timestamp + 90, duration), // Longer segments for better context
+            context: (beforeText + match[0] + afterText).trim()
+          });
         }
       }
 
       return NextResponse.json({
         content: assistantResponse,
-        citations: citations.slice(0, 8),
+        citations: citations.slice(0, 10), // Allow more citations for comprehensive analysis
         model: "gemini-2.0-flash-exp",
-        analysisType: visualFrames.length > 0 ? "multimodal" : "text-only",
-        framesAnalyzed: visualFrames.length
-      })
+        analysisType: "expert-text-analysis",
+        searchQuery: message,
+        videoAnalyzed: {
+          title,
+          duration: `${Math.floor(duration / 60)}:${(duration % 60).toString().padStart(2, "0")}`,
+          sectionsCount: sections.length,
+          transcriptLength: transcript.length
+        }
+      });
 
     } catch (geminiError: any) {
       console.error("Gemini API error details:", {
@@ -244,33 +265,33 @@ Provide a comprehensive ${visualFrames.length > 0 ? 'multimodal' : 'textual'} an
         status: geminiError.status,
         statusText: geminiError.statusText,
         response: geminiError.response
-      })
+      });
 
-      // Handle specific errors
+      // Handle specific errors with helpful messages
       if (geminiError.message?.includes("API_KEY_INVALID")) {
         return NextResponse.json({
           error: "Invalid API key",
           content: "The Gemini API key is invalid. Please check your configuration."
-        }, { status: 500 })
+        }, { status: 500 });
       }
 
       if (geminiError.message?.includes("Too Many Requests") || geminiError.status === 429) {
         return NextResponse.json({
           error: "Rate limit exceeded", 
           content: "The Gemini API quota has been exceeded. Please try again later."
-        }, { status: 429 })
+        }, { status: 429 });
       }
 
       if (geminiError.message?.includes("SAFETY")) {
         return NextResponse.json({
           content: "I cannot provide a response to this query due to safety guidelines. Please try rephrasing your question."
-        })
+        });
       }
 
       return NextResponse.json({
         error: "Gemini API error",
         content: "I'm having trouble connecting to the AI service. Please try again in a moment."
-      }, { status: 500 })
+      }, { status: 500 });
     }
 
   } catch (error: any) {
@@ -278,12 +299,53 @@ Provide a comprehensive ${visualFrames.length > 0 ? 'multimodal' : 'textual'} an
       message: error.message,
       stack: error.stack,
       name: error.name
-    })
+    });
 
     return NextResponse.json({
       error: "Failed to process chat message",
       content: "I'm sorry, I encountered an error while processing your message. Please try again.",
       details: process.env.NODE_ENV === 'development' ? error.message : undefined
-    }, { status: 500 })
+    }, { status: 500 });
   }
+}
+
+// Helper function to analyze transcript patterns
+function analyzeTranscriptPatterns(transcript: string): string {
+  const patterns = {
+    codeTerms: ['function', 'variable', 'class', 'method', 'algorithm', 'loop', 'condition'],
+    concepts: ['mutex', 'thread', 'async', 'sync', 'goroutine', 'channel', 'interface'],
+    actions: ['implement', 'demonstrate', 'example', 'show', 'explain', 'discuss'],
+    timeMarkers: ['first', 'next', 'then', 'finally', 'later', 'before', 'after']
+  };
+
+  const analysis = [];
+  const lowerTranscript = transcript.toLowerCase();
+
+  for (const [category, terms] of Object.entries(patterns)) {
+    const foundTerms = terms.filter(term => lowerTranscript.includes(term));
+    if (foundTerms.length > 0) {
+      analysis.push(`${category}: ${foundTerms.join(', ')}`);
+    }
+  }
+
+  return analysis.length > 0 
+    ? `Programming Terms Detected: ${analysis.join(' | ')}`
+    : "General content without specific programming terminology detected";
+}
+
+// Helper function to get contextual timestamps
+function getContextualTimestamps(transcript: string, currentTime: number, windowSeconds: number): string {
+  const lines = transcript.split('\n');
+  const relevantLines = lines.filter(line => {
+    const timestampMatch = line.match(/\[(\d+):(\d+)\]/);
+    if (timestampMatch) {
+      const lineTime = Number.parseInt(timestampMatch[1]) * 60 + Number.parseInt(timestampMatch[2]);
+      return Math.abs(lineTime - currentTime) <= windowSeconds;
+    }
+    return false;
+  });
+
+  return relevantLines.length > 0 
+    ? `Context around current time:\n${relevantLines.slice(0, 10).join('\n')}`
+    : "No timestamped content available around current position";
 }
