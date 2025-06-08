@@ -39,13 +39,27 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
   ])
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [shouldScrollOnNextMessage, setShouldScrollOnNextMessage] = useState(false)
+  const messagesEndRef = useRef<HTMLDivElement>(null)
 
-  useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+  // Auto-scroll function - only for chat container
+  const scrollToBottom = () => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ 
+        behavior: "smooth",
+        block: "nearest",
+        inline: "nearest"
+      })
     }
-  }, [messages])
+  }
+
+  // Only scroll when user sends a new message
+  useEffect(() => {
+    if (shouldScrollOnNextMessage) {
+      scrollToBottom()
+      setShouldScrollOnNextMessage(false)
+    }
+  }, [messages, shouldScrollOnNextMessage])
 
   const formatTime = (seconds: number) => {
     const mins = Math.floor(seconds / 60)
@@ -67,6 +81,9 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
     setMessages((prev) => [...prev, userMessage])
     setInput("")
     setIsLoading(true)
+    
+    // Trigger scroll when user sends a message
+    setShouldScrollOnNextMessage(true)
 
     try {
       const response = await fetch("/api/chat", {
@@ -129,7 +146,7 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
       </div>
 
       {/* Messages */}
-      <ScrollArea className="flex-1 px-6" ref={scrollAreaRef}>
+      <ScrollArea className="flex-1 px-6">
         <div className="py-6 space-y-6">
           {messages.map((message) => (
             <div key={message.id} className="space-y-4">
@@ -189,6 +206,9 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
               </div>
             </div>
           )}
+          
+          {/* Invisible element at the bottom for auto-scroll */}
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
