@@ -125,10 +125,10 @@ export default function LandingPage() {
             <div className="mx-auto max-w-5xl px-6">
               <div className="sm:mx-auto lg:mt-0 lg:mr-auto">
                 <h1 className="mt-8 max-w-2xl text-5xl font-medium text-balance md:text-6xl lg:mt-16">
-                  Your videos, reimagined with AI
+                  Skip the scrubbing, ask the AI
                 </h1>
                 <p className="mt-8 max-w-2xl text-lg text-pretty">
-                  The intelligent video analysis platform with AI-powered chat. Upload any YouTube video and get instant
+                  The intelligent unimodal video analysis tool with AI-powered chat. Upload any YouTube video and get instant
                   insights, section breakdowns, and interactive conversations about the content.
                 </p>
 
