@@ -25,18 +25,19 @@ interface ChatInterfaceProps {
   videoData: any
   currentTime: number
   onSeekTo: (time: number) => void
+  // NEW PROPS FOR EXTERNAL STATE MANAGEMENT
+  messages: Message[]
+  onSendMessage: (message: string) => Promise<void>
 }
 
-export default function ChatInterface({ videoId, videoData, currentTime, onSeekTo }: ChatInterfaceProps) {
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      id: "1",
-      role: "assistant",
-      content:
-        "Hello! I've analyzed your video and I'm ready to answer questions about its content. What would you like to know?",
-      timestamp: new Date(),
-    },
-  ])
+export default function ChatInterface({ 
+  videoId, 
+  videoData, 
+  currentTime, 
+  onSeekTo,
+  messages,
+  onSendMessage 
+}: ChatInterfaceProps) {
   const [input, setInput] = useState("")
   const [isLoading, setIsLoading] = useState(false)
   const scrollAreaRef = useRef<HTMLDivElement>(null)
@@ -57,61 +58,23 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
     e.preventDefault()
     if (!input.trim() || isLoading) return
 
-    const userMessage: Message = {
-      id: Date.now().toString(),
-      role: "user",
-      content: input,
-      timestamp: new Date(),
-    }
-
-    setMessages((prev) => [...prev, userMessage])
-    setInput("")
+    const messageToSend = input
+    setInput("") // Clear input immediately
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: input,
-          videoId,
-          videoData,
-          currentTime,
-        }),
-      })
-
-      if (response.ok) {
-        const data = await response.json()
-        const assistantMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: data.content,
-          timestamp: new Date(),
-          citations: data.citations,
-        }
-        setMessages((prev) => [...prev, assistantMessage])
-      } else {
-        const errorData = await response.json()
-        const errorMessage: Message = {
-          id: (Date.now() + 1).toString(),
-          role: "assistant",
-          content: errorData.content || "I'm sorry, I encountered an error. Please try again.",
-          timestamp: new Date(),
-        }
-        setMessages((prev) => [...prev, errorMessage])
-      }
+      await onSendMessage(messageToSend)
     } catch (error) {
       console.error("Error sending message:", error)
-      const errorMessage: Message = {
-        id: (Date.now() + 1).toString(),
-        role: "assistant",
-        content: "I'm sorry, I'm having trouble connecting to the AI service. Please try again.",
-        timestamp: new Date(),
-      }
-      setMessages((prev) => [...prev, errorMessage])
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleNewChat = () => {
+    // You can implement this to clear chat or create new conversation
+    // For now, this could be handled by the parent component
+    console.log("New chat requested")
   }
 
   return (
@@ -123,6 +86,7 @@ export default function ChatInterface({ videoId, videoData, currentTime, onSeekT
           variant="outline"
           size="sm"
           className="bg-gray-900 text-white border-gray-900 hover:bg-gray-800 rounded-full px-4"
+          onClick={handleNewChat}
         >
           New Chat
         </Button>
