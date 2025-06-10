@@ -25,12 +25,34 @@ interface VideoData {
   transcript: string
 }
 
+interface Message {
+  id: string
+  role: "user" | "assistant"
+  content: string
+  timestamp: Date
+  citations?: Array<{
+    text: string
+    startTime: number
+    endTime: number
+  }>
+}
+
 export default function VideoAnalysisPage() {
   const params = useParams()
   const videoId = params.id as string
   const [videoData, setVideoData] = useState<VideoData | null>(null)
   const [currentTime, setCurrentTime] = useState(0)
   const [isLoading, setIsLoading] = useState(true)
+  
+  // CHAT STATE MOVED TO PARENT - THIS FIXES THE ISSUE
+  const [chatMessages, setChatMessages] = useState<Message[]>([
+    {
+      id: '1',
+      role: 'assistant',
+      content: "Hello! I've analyzed your video and I'm ready to answer questions about its content. What would you like to know?",
+      timestamp: new Date()
+    }
+  ])
 
   useEffect(() => {
     const fetchVideoData = async () => {
@@ -56,6 +78,62 @@ export default function VideoAnalysisPage() {
 
   const handleSeekTo = (time: number) => {
     setCurrentTime(time)
+  }
+
+  // Chat message handlers
+  const handleSendMessage = async (message: string) => {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      role: 'user',
+      content: message,
+      timestamp: new Date()
+    }
+
+    // Add user message immediately
+    setChatMessages(prev => [...prev, userMessage])
+
+    try {
+      const response = await fetch("/api/chat", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message,
+          videoId,
+          videoData,
+          currentTime,
+        }),
+      })
+
+      if (response.ok) {
+        const data = await response.json()
+        const assistantMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: data.content,
+          timestamp: new Date(),
+          citations: data.citations,
+        }
+        setChatMessages(prev => [...prev, assistantMessage])
+      } else {
+        const errorData = await response.json()
+        const errorMessage: Message = {
+          id: (Date.now() + 1).toString(),
+          role: 'assistant',
+          content: errorData.content || "I'm sorry, I encountered an error. Please try again.",
+          timestamp: new Date(),
+        }
+        setChatMessages(prev => [...prev, errorMessage])
+      }
+    } catch (error) {
+      console.error("Error sending message:", error)
+      const errorMessage: Message = {
+        id: (Date.now() + 2).toString(),
+        role: 'assistant',
+        content: "I'm sorry, I'm having trouble connecting to the AI service. Please try again.",
+        timestamp: new Date(),
+      }
+      setChatMessages(prev => [...prev, errorMessage])
+    }
   }
 
   if (isLoading) {
@@ -113,11 +191,18 @@ export default function VideoAnalysisPage() {
                   videoData={videoData}
                   currentTime={currentTime}
                   onSeekTo={handleSeekTo}
+                  // PASS CHAT STATE AS PROPS
+                  messages={chatMessages}
+                  onSendMessage={handleSendMessage}
                 />
               </TabsContent>
 
               <TabsContent value="sections" className="mt-4">
-                <SectionBreakdown sections={videoData.sections} currentTime={currentTime} onSeekTo={handleSeekTo} />
+                <SectionBreakdown 
+                  sections={videoData.sections} 
+                  currentTime={currentTime} 
+                  onSeekTo={handleSeekTo} 
+                />
               </TabsContent>
 
               <TabsContent value="search" className="mt-4">
