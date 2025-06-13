@@ -140,8 +140,8 @@ export default function LandingPage() {
                     </Link>
                   </Button>
                   <Button asChild size="lg" variant="ghost" className="h-10.5 rounded-xl px-5 text-base">
-                    <Link href="#features">
-                      <span className="text-nowrap">Learn More</span>
+                    <Link href="/privacy">
+                      <span className="text-nowrap">Privacy Policy</span>
                     </Link>
                   </Button>
                 </div>
