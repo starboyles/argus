@@ -3,20 +3,15 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(request: NextRequest) {
   try {
-    const {
-      message,
-      videoId,
-      videoData,
-      currentTime,
-      chatHistory = [],
-    } = await request.json();
+    const { message, videoId, videoData, currentTime } = await request.json();
 
     // Validate input data
     if (!message || !videoId || !videoData) {
       return NextResponse.json(
         {
           error: "Missing required data",
-          content: "I need more information to help you with this video! 🤔",
+          content:
+            "I'm sorry, I need more information to help you with this video.",
         },
         { status: 400 }
       );
@@ -28,222 +23,330 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "GEMINI_API_KEY not configured",
-          content:
-            "Sorry, I'm having trouble connecting right now. Please try again!",
+          content: "I'm sorry, the AI service is not properly configured.",
         },
         { status: 500 }
       );
     }
 
+    // Initialize Gemini with optimal settings for text analysis
     const genAI = new GoogleGenerativeAI(apiKey);
+
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-exp",
       generationConfig: {
-        temperature: 0.3, // Balanced for natural conversation
-        topP: 0.9,
+        temperature: 0.1, // Very low for maximum accuracy and consistency
+        topP: 0.8,
         topK: 40,
-        maxOutputTokens: 1000, // Concise but complete responses
+        maxOutputTokens: 8192, // Maximum for detailed responses
       },
     });
 
-    // Smart conversational pattern detection
-    const conversationalPatterns = {
-      greetings: /^(hello|hi|hey|yo|what's up|wassup)\.?$/i,
-      gratitude: /^(thank you|thanks|thx|ty)\.?$/i,
-      farewell: /^(goodbye|bye|see you|later|gtg)\.?$/i,
-      agreement: /^(ok|okay|alright|got it|understood|makes sense|i see)\.?$/i,
-      appreciation: /^(cool|nice|great|awesome|amazing|perfect|sweet)\.?$/i,
-      confusion: /^(huh|what|confused|don't understand|unclear)\.?$/i,
-      gibberish: /^[a-z]{1,15}$/i,
-    };
+    // Check for conversational/social messages first
+    const conversationalPatterns = [
+      /^(thank you|thanks|thx)\.?$/i,
+      /^(hello|hi|hey|yo|what's up|wassup|)\.?$/i,
+      /^(goodbye|bye|see you)\.?$/i,
+      /^(you're welcome|welcome)\.?$/i,
+      /^(ok|okay|alright)\.?$/i,
+      /^(got it|understood|makes sense)\.?$/i,
+      /^(cool|nice|great|awesome)\.?$/i,
+    ];
 
-    // Detect conversational intent
-    const trimmedMessage = message.trim();
-    let conversationalType: keyof typeof conversationalPatterns | null = null;
+    const isConversational = conversationalPatterns.some((pattern) =>
+      pattern.test(message.trim())
+    );
 
-    for (const [type, pattern] of Object.entries(conversationalPatterns)) {
-      if (pattern.test(trimmedMessage)) {
-        conversationalType = type as keyof typeof conversationalPatterns;
-        break;
-      }
-    }
-
-    // Handle conversational responses with personality
-    if (conversationalType) {
-      const responses = {
-        greetings: [
-          "Hey there! 👋 Ready to dive into this video together?",
-          "Hi! I'm here to help you explore this video content. What interests you?",
-          "Hello! Let's discover what this video has to offer. What's on your mind?",
-        ],
-        gratitude: [
-          "You're welcome! 😊 Happy to help you learn more.",
-          "Glad I could help! What else would you like to explore?",
-          "No problem! Keep the questions coming 🚀",
-        ],
-        farewell: [
-          "See you later! Happy learning! 📚",
-          "Bye! Come back if you have more questions about the video.",
-          "Take care! Hope you found the video helpful! 👋",
-        ],
-        agreement: [
-          "Perfect! Anything else you'd like to know about this video?",
-          "Great! What other parts of the video interest you?",
-          "Awesome! Feel free to ask about any other topics covered.",
-        ],
-        appreciation: [
-          "Right? This video has some really good content! 🎯",
-          "I'm glad you found it useful! Want to explore more?",
-          "Yeah! There's a lot of valuable stuff in here. What's next?",
-        ],
-        confusion: [
-          "No worries! Let me try explaining it differently. What part confused you?",
-          "I can help clarify! What specifically didn't make sense?",
-          "Let's break it down together. Which part should I explain better?",
-        ],
-        gibberish: [
-          "Hmm, that looks like a bit of gibberish! 😄 What did you actually want to ask about this video?",
-          "I think your keyboard might have had a moment there! What can I help you find in this video?",
-          "Not sure what that means, but I'm here to help with the video content! What interests you?",
-        ],
+    if (isConversational) {
+      // Handle conversational responses with proper typing
+      const conversationalResponses: Record<string, string> = {
+        "thank you":
+          "You're welcome! Feel free to ask me anything else about this video.",
+        thanks:
+          "You're welcome! I'm here if you need any more help with the video content.",
+        thx: "No problem! Let me know if you have other questions about the video.",
+        hello:
+          "Hello! I'm ready to help you analyze this video. What would you like to know?",
+        hi: "Hi there! Ask me anything about this video content.",
+        hey: "Hey! What can I help you discover in this video?",
+        goodbye:
+          "Goodbye! Feel free to come back if you have more questions about the video.",
+        bye: "See you later! Happy learning with your video content.",
+        ok: "Great! Is there anything specific you'd like to know about this video?",
+        okay: "Perfect! What else can I help you understand about this video?",
+        cool: "Glad you found it helpful! Any other questions about the video?",
+        nice: "Thanks! Let me know if you want to explore more of this video content.",
+        great:
+          "Wonderful! Feel free to ask about any other parts of the video.",
+        awesome:
+          "I'm glad I could help! What else would you like to know about this video?",
       };
 
-      const responseOptions = conversationalType
-        ? responses[conversationalType]
-        : [];
+      const normalizedMessage = message.toLowerCase().replace(/[.!?]/g, "");
       const response =
-        responseOptions[Math.floor(Math.random() * responseOptions.length)];
+        conversationalResponses[normalizedMessage] ||
+        "Thanks! Is there anything specific you'd like to know about this video?";
 
       return NextResponse.json({
         content: response,
         citations: [],
         model: "gemini-2.0-flash-exp",
-        analysisType: "conversational",
+        analysisType: "conversational-response",
         searchQuery: message,
       });
     }
-
-    // Extract video data
-    const title = videoData.title || "this video";
-    const description = videoData.description || "";
+    const title = videoData.title || "Unknown Video";
+    const description = videoData.description || "No description available";
     const duration = videoData.duration || 0;
     const sections = videoData.sections || [];
-    const transcript = videoData.transcript || "";
-    const currentPos = currentTime || 0;
+    const transcript = videoData.transcript || "No transcript available";
+    const safeCurrentTime = currentTime || 0;
 
-    // Build conversation context from chat history
-    const conversationContext = chatHistory
-      .slice(-6) // Last 6 messages for context
-      .map((msg: any) => `${msg.role}: ${msg.content}`)
-      .join("\n");
+    // Build comprehensive sections with timing analysis
+    const enrichedSections = sections.map((section: any, index: number) => {
+      const sectionTitle = section?.title || `Section ${index + 1}`;
+      const startTime = section?.startTime || 0;
+      const endTime = section?.endTime || 0;
+      const sectionDescription = section?.description || "No description";
 
-    // Get relevant sections around current time
-    const currentSection = findCurrentSection(sections, currentPos);
-    const nearbyContent = getNearbyContent(transcript, currentPos, 120); // 2-minute window
+      return {
+        index: index + 1,
+        title: sectionTitle,
+        startTime,
+        endTime,
+        duration: endTime - startTime,
+        startFormatted: `${Math.floor(startTime / 60)}:${(startTime % 60)
+          .toString()
+          .padStart(2, "0")}`,
+        endFormatted: `${Math.floor(endTime / 60)}:${(endTime % 60)
+          .toString()
+          .padStart(2, "0")}`,
+        description: sectionDescription,
+        transcript: section?.transcript || "",
+      };
+    });
 
-    // Create smart, conversational system prompt
-    const smartPrompt = `You're a helpful video analysis assistant with expertise in programming and technical content. You're having a natural conversation with someone watching "${title}".
+    const sectionsAnalysis =
+      enrichedSections.length > 0
+        ? enrichedSections
+            .map(
+              (section: {
+                index: any;
+                title: any;
+                startFormatted: any;
+                endFormatted: any;
+                duration: number;
+                description: any;
+                transcript: string;
+              }) =>
+                `Section ${section.index}: "${section.title}"
+Time Range: ${section.startFormatted} - ${section.endFormatted} (${Math.floor(
+                  section.duration / 60
+                )}m ${section.duration % 60}s)
+Description: ${section.description}
+${
+  section.transcript
+    ? `Transcript Excerpt: ${section.transcript.substring(0, 300)}${
+        section.transcript.length > 300 ? "..." : ""
+      }`
+    : ""
+}
+---`
+            )
+            .join("\n\n")
+        : "No structured sections available";
 
-CURRENT SITUATION:
-- Video duration: ${formatTime(duration)}
-- They're at: ${formatTime(currentPos)}
-- Current section: ${currentSection ? currentSection.title : "Not in a specific section"
-      }
-- Their question: "${message}"
+    // Analyze transcript for programming concepts and patterns
+    const transcriptAnalysis = analyzeTranscriptPatterns(transcript);
 
-${conversationContext ? `RECENT CONVERSATION:\n${conversationContext}\n` : ""}
+    // Create context-aware timestamps around current time
+    const contextWindow = getContextualTimestamps(
+      transcript,
+      safeCurrentTime,
+      180
+    ); // 3-minute window
 
-CONTENT AROUND CURRENT TIME:
-${nearbyContent}
+    // Build the ultimate analysis prompt
+    const expertPrompt = `You are an expert AI video analyst with deep knowledge of programming, software development, and technical education. You excel at finding precise information in video content and providing detailed, accurate responses with exact timestamps.
 
-${transcript
-        ? `FULL TRANSCRIPT:\n${transcript.substring(0, 4000)}${transcript.length > 4000 ? "..." : ""
-        }`
-        : ""
-      }
+COMPREHENSIVE VIDEO CONTEXT:
+═══════════════════════════════════════════════════════════════
 
-HOW TO RESPOND:
-✅ Be conversational and helpful like you're watching together
-✅ Give direct answers without unnecessary structure  
-✅ Include specific timestamps when relevant (format MM:SS)
-✅ If you can't find something, suggest what IS available nearby
-✅ Keep responses focused and not overwhelming
-✅ Show personality - be encouraging and use emojis occasionally
-✅ Build on the conversation naturally
-✅ Reference their current position when helpful
+📹 TITLE: "${title}"
+⏱️ TOTAL DURATION: ${Math.floor(duration / 60)}:${(duration % 60)
+      .toString()
+      .padStart(2, "0")}
+📍 CURRENT POSITION: ${Math.floor(safeCurrentTime / 60)}:${(
+      safeCurrentTime % 60
+    )
+      .toString()
+      .padStart(2, "0")}
+📝 DESCRIPTION: ${description}
 
-❌ Don't use academic headers or bullet points
-❌ Don't be overly verbose 
-❌ Don't list search methodology
-❌ Don't overwhelm with too much information
+STRUCTURAL ANALYSIS:
+${sectionsAnalysis}
 
-SPECIAL HANDLING:
-- If asking about something not covered: "I don't see that in this video, but there's [related topic] at [time] that might help!"
-- If asking for summary: Focus on key points with timestamps
-- If asking about current time: Use context around where they are
-- If vague question: Ask a clarifying question to be more helpful
+CONTENT PATTERN ANALYSIS:
+${transcriptAnalysis}
 
-Remember: You're a smart friend helping them learn, not writing a technical report.`;
+CONTEXTUAL WINDOW (±3 minutes from current position):
+${contextWindow}
+
+COMPLETE TRANSCRIPT WITH TIMESTAMPS:
+${transcript}
+
+EXPERT ANALYSIS INSTRUCTIONS:
+═══════════════════════════════════════════════════════════════
+
+🔍 SEARCH METHODOLOGY:
+1. Perform a comprehensive scan of the ENTIRE transcript
+2. Use advanced pattern matching for technical terminology and concepts
+3. Consider variations, synonyms, and related terms
+4. Analyze context around matches for relevance
+5. Cross-reference with section titles and descriptions
+
+📍 TIMESTAMP PRECISION:
+1. Provide EXACT timestamps in MM:SS format for every relevant mention
+2. Include brief context for what's happening at each timestamp
+3. If a topic spans multiple timeframes, list ALL occurrences
+4. Distinguish between brief mentions vs. detailed explanations
+
+🧠 TECHNICAL UNDERSTANDING:
+1. Demonstrate deep understanding of programming concepts
+2. Explain the specific aspect being discussed at each timestamp
+3. Identify relationships between different parts of the content
+4. Note progressive complexity or skill building
+
+💡 COMPREHENSIVE RESPONSE FORMAT:
+1. Start with a summary of findings
+2. List each relevant timestamp with detailed context
+3. Explain the progression or flow of the topic
+4. Note any visual cues mentioned in the transcript (code examples, diagrams, etc.)
+5. If the topic isn't found, explain what WAS searched and suggest related topics that ARE present
+
+SEARCH QUERY: "${message}"
+
+Provide an exhaustive analysis that demonstrates mastery of both the video content and the requested topic. Be thorough, precise, and educational in your response.`;
 
     try {
-      console.log("Generating conversational response...");
+      console.log("Sending optimized text-based request to Gemini API...");
 
-      const result = await model.generateContent(smartPrompt);
+      // Generate response using enhanced prompt
+      const result = await model.generateContent(expertPrompt);
+
+      if (!result.response) {
+        throw new Error("No response from Gemini API");
+      }
+
+      const response = result.response;
       let assistantResponse = "";
 
       try {
-        assistantResponse = result.response.text();
+        assistantResponse = response.text();
       } catch (textError) {
-        console.error("Error extracting text:", textError);
-        if (result.response.candidates?.[0]?.content?.parts?.[0]?.text) {
-          assistantResponse =
-            result.response.candidates[0].content.parts[0].text;
+        console.error("Error extracting text from response:", textError);
+        if (
+          response.candidates &&
+          response.candidates[0]?.content?.parts?.[0]?.text
+        ) {
+          assistantResponse = response.candidates[0].content.parts[0].text;
         } else {
-          throw new Error("Could not extract response text");
+          throw new Error("Could not extract text from response");
         }
       }
 
       if (!assistantResponse) {
         assistantResponse =
-          "I got your question but I'm having trouble responding right now. Could you try asking again? 🤔";
+          "I received your question but couldn't generate a response. Please try rephrasing your question.";
       }
 
-      // Smart timestamp extraction with context
-      const citations = extractSmartCitations(assistantResponse, duration);
+      console.log("Expert-level text analysis completed successfully");
+
+      // Advanced timestamp extraction with context validation
+      const timestampRegex = /(\d{1,3}):(\d{2})/g;
+      const citations: {
+        text: string;
+        startTime: number;
+        endTime: number;
+        context?: string;
+      }[] = [];
+      let match;
+
+      while ((match = timestampRegex.exec(assistantResponse)) !== null) {
+        const minutes = Number.parseInt(match[1], 10);
+        const seconds = Number.parseInt(match[2], 10);
+        const timestamp = minutes * 60 + seconds;
+
+        if (
+          timestamp <= duration &&
+          !citations.some((c) => c.startTime === timestamp)
+        ) {
+          // Extract context around the timestamp mention
+          const beforeText = assistantResponse.substring(
+            Math.max(0, match.index - 100),
+            match.index
+          );
+          const afterText = assistantResponse.substring(
+            match.index + match[0].length,
+            Math.min(
+              assistantResponse.length,
+              match.index + match[0].length + 100
+            )
+          );
+
+          citations.push({
+            text: `${match[1]}:${match[2]}`,
+            startTime: timestamp,
+            endTime: Math.min(timestamp + 90, duration), // Longer segments for better context
+            context: (beforeText + match[0] + afterText).trim(),
+          });
+        }
+      }
 
       return NextResponse.json({
         content: assistantResponse,
-        citations: citations.slice(0, 5), // Keep it manageable
+        citations: citations.slice(0, 10), // Allow more citations for comprehensive analysis
         model: "gemini-2.0-flash-exp",
-        analysisType: "smart-conversation",
+        analysisType: "expert-text-analysis",
         searchQuery: message,
-        videoContext: {
+        videoAnalyzed: {
           title,
-          currentTime: formatTime(currentPos),
-          currentSection: currentSection?.title || null,
+          duration: `${Math.floor(duration / 60)}:${(duration % 60)
+            .toString()
+            .padStart(2, "0")}`,
+          sectionsCount: sections.length,
+          transcriptLength: transcript.length,
         },
       });
     } catch (geminiError: any) {
-      console.error("Gemini API error:", geminiError);
+      console.error("Gemini API error details:", {
+        message: geminiError.message,
+        status: geminiError.status,
+        statusText: geminiError.statusText,
+        response: geminiError.response,
+      });
 
-      // Friendly error handling
+      // Handle specific errors with helpful messages
       if (geminiError.message?.includes("API_KEY_INVALID")) {
         return NextResponse.json(
           {
             error: "Invalid API key",
             content:
-              "I'm having trouble with my connection. Please check back soon! 🔧",
+              "The Gemini API key is invalid. Please check your configuration.",
           },
           { status: 500 }
         );
       }
 
-      if (geminiError.status === 429) {
+      if (
+        geminiError.message?.includes("Too Many Requests") ||
+        geminiError.status === 429
+      ) {
         return NextResponse.json(
           {
             error: "Rate limit exceeded",
             content:
-              "I'm getting too many requests right now. Give me a moment and try again! ⏳",
+              "The Gemini API quota has been exceeded. Please try again later.",
           },
           { status: 429 }
         );
@@ -252,27 +355,31 @@ Remember: You're a smart friend helping them learn, not writing a technical repo
       if (geminiError.message?.includes("SAFETY")) {
         return NextResponse.json({
           content:
-            "I can't respond to that question, but I'm happy to help with other aspects of this video! 😊",
+            "I cannot provide a response to this query due to safety guidelines. Please try rephrasing your question.",
         });
       }
 
       return NextResponse.json(
         {
-          error: "Service error",
+          error: "Gemini API error",
           content:
-            "Something went wrong on my end. Please try your question again! 🔄",
+            "I'm having trouble connecting to the AI service. Please try again in a moment.",
         },
         { status: 500 }
       );
     }
   } catch (error: any) {
-    console.error("General error:", error);
+    console.error("General error in chat route:", {
+      message: error.message,
+      stack: error.stack,
+      name: error.name,
+    });
 
     return NextResponse.json(
       {
-        error: "Processing error",
+        error: "Failed to process chat message",
         content:
-          "Oops! I encountered an error. Please try again in a moment! 🤖",
+          "I'm sorry, I encountered an error while processing your message. Please try again.",
         details:
           process.env.NODE_ENV === "development" ? error.message : undefined,
       },
@@ -281,65 +388,80 @@ Remember: You're a smart friend helping them learn, not writing a technical repo
   }
 }
 
-// Helper Functions
-function formatTime(seconds: number): string {
-  const mins = Math.floor(seconds / 60);
-  const secs = Math.floor(seconds % 60);
-  return `${mins}:${secs.toString().padStart(2, "0")}`;
+// Helper function to analyze transcript patterns
+function analyzeTranscriptPatterns(transcript: string): string {
+  const patterns = {
+    codeTerms: [
+      "function",
+      "variable",
+      "class",
+      "method",
+      "algorithm",
+      "loop",
+      "condition",
+    ],
+    concepts: [
+      "mutex",
+      "thread",
+      "async",
+      "sync",
+      "goroutine",
+      "channel",
+      "interface",
+    ],
+    actions: [
+      "implement",
+      "demonstrate",
+      "example",
+      "show",
+      "explain",
+      "discuss",
+    ],
+    timeMarkers: [
+      "first",
+      "next",
+      "then",
+      "finally",
+      "later",
+      "before",
+      "after",
+    ],
+  };
+
+  const analysis = [];
+  const lowerTranscript = transcript.toLowerCase();
+
+  for (const [category, terms] of Object.entries(patterns)) {
+    const foundTerms = terms.filter((term) => lowerTranscript.includes(term));
+    if (foundTerms.length > 0) {
+      analysis.push(`${category}: ${foundTerms.join(", ")}`);
+    }
+  }
+
+  return analysis.length > 0
+    ? `Programming Terms Detected: ${analysis.join(" | ")}`
+    : "General content without specific programming terminology detected";
 }
 
-function findCurrentSection(sections: any[], currentTime: number) {
-  return sections.find(
-    (section) =>
-      currentTime >= (section.startTime || 0) &&
-      currentTime <= (section.endTime || Infinity)
-  );
-}
-
-function getNearbyContent(
+// Helper function to get contextual timestamps
+function getContextualTimestamps(
   transcript: string,
   currentTime: number,
   windowSeconds: number
 ): string {
-  if (!transcript) return "No transcript available";
-
   const lines = transcript.split("\n");
   const relevantLines = lines.filter((line) => {
     const timestampMatch = line.match(/\[(\d+):(\d+)\]/);
     if (timestampMatch) {
       const lineTime =
-        parseInt(timestampMatch[1]) * 60 + parseInt(timestampMatch[2]);
+        Number.parseInt(timestampMatch[1]) * 60 +
+        Number.parseInt(timestampMatch[2]);
       return Math.abs(lineTime - currentTime) <= windowSeconds;
     }
     return false;
   });
 
   return relevantLines.length > 0
-    ? relevantLines.slice(0, 8).join("\n")
-    : "No content available around current time";
-}
-
-function extractSmartCitations(response: string, maxDuration: number) {
-  const timestampRegex = /(\d{1,3}):(\d{2})/g;
-  const citations: { text: string; startTime: number; endTime: number }[] = [];
-  let match;
-
-  while ((match = timestampRegex.exec(response)) !== null) {
-    const minutes = parseInt(match[1], 10);
-    const seconds = parseInt(match[2], 10);
-    const timestamp = minutes * 60 + seconds;
-
-    if (
-      timestamp <= maxDuration &&
-      !citations.some((c) => c.startTime === timestamp)
-    ) {
-      citations.push({
-        text: `${match[1]}:${match[2]}`,
-        startTime: timestamp,
-        endTime: Math.min(timestamp + 30, maxDuration), // 30-second segments
-      });
-    }
-  }
-
-  return citations;
+    ? `Context around current time:\n${relevantLines.slice(0, 10).join("\n")}`
+    : "No timestamped content available around current position";
 }
