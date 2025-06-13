@@ -77,7 +77,6 @@ export default function LandingPage() {
 
   return (
     <>
-      {/* Header */}
       <header>
         <nav
           className={cn(
@@ -118,7 +117,6 @@ export default function LandingPage() {
         </nav>
       </header>
 
-      {/* Main Content */}
       <main className="overflow-hidden">
         <section>
           <div className="relative pt-20">
@@ -148,7 +146,6 @@ export default function LandingPage() {
               </div>
             </div>
 
-            {/* Video Input Section */}
             <div className="relative mt-8 px-6 sm:mt-12 md:mt-20">
               <div className="mx-auto max-w-5xl">
                 <div className="bg-gray-50 rounded-2xl p-6 sm:p-8 border border-gray-100">
@@ -189,12 +186,11 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Preview Section */}
         <section className="mt-8 px-6 sm:mt-12 md:mt-20">
           <div className="mx-auto max-w-5xl">
             <div className="bg-gray-900 rounded-2xl sm:rounded-3xl p-4 sm:p-6 lg:p-8 overflow-hidden">
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 min-h-[400px] sm:h-[500px]">
-                {/* Video Player Preview */}
+
                 <div className="lg:col-span-2 bg-gray-800 rounded-xl sm:rounded-2xl flex items-center justify-center">
                   <div className="text-center text-gray-400 p-4">
                     <Play className="w-12 sm:w-16 h-12 sm:h-16 mx-auto mb-4 opacity-50" />
@@ -203,7 +199,6 @@ export default function LandingPage() {
                   </div>
                 </div>
 
-                {/* Chat Preview */}
                 <div className="bg-white rounded-xl sm:rounded-2xl p-4 sm:p-6 flex flex-col">
                   <div className="flex items-center justify-between mb-4 sm:mb-6">
                     <h3 className="font-medium text-gray-900">Video Chat</h3>
@@ -244,8 +239,6 @@ export default function LandingPage() {
           </div>
         </section>
 
-        {/* Features Section */}
-        {/* Features Section */}
         <section id="features" className="mt-8 px-6 py-12 sm:mt-12 sm:py-16 md:mt-20 lg:py-20">
           <div className="mx-auto max-w-5xl">
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 sm:gap-10 lg:gap-12">
@@ -307,10 +300,10 @@ export default function LandingPage() {
               <span className="text-gray-600 text-xs sm:text-sm ml-2">© 2025 Argus, All rights reserved.</span>
             </div>
             <div className="flex items-center gap-4 sm:gap-8 text-gray-600 text-sm sm:text-base">
-              <button className="hover:text-gray-900" onClick={handleGitHub}>
-                GitHub
-              </button>
-              <button className="hover:text-gray-900">Privacy Policy</button>
+
+              <Link href="/help">
+                <button className="hover:text-gray-900">Help</button>
+              </Link>
               <Link href="/terms">
                 <button className="hover:text-gray-900">Terms of Service</button>
               </Link>
