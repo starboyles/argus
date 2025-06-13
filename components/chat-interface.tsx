@@ -1,85 +1,87 @@
-"use client"
+"use client";
 
-import type React from "react"
+import type React from "react";
 
-import { useState, useRef, useEffect } from "react"
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { ScrollArea } from "@/components/ui/scroll-area"
-import { Send, Clock } from "lucide-react"
+import { useState, useRef, useEffect } from "react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Send, Clock } from "lucide-react";
 
 interface Message {
-  id: string
-  role: "user" | "assistant"
-  content: string
-  timestamp: Date
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  timestamp: Date;
   citations?: Array<{
-    text: string
-    startTime: number
-    endTime: number
-  }>
+    text: string;
+    startTime: number;
+    endTime: number;
+  }>;
 }
 
 interface ChatInterfaceProps {
-  videoId: string
-  videoData: any
-  currentTime: number
-  onSeekTo: (time: number) => void
-  // NEW PROPS FOR EXTERNAL STATE MANAGEMENT
-  messages: Message[]
-  onSendMessage: (message: string) => Promise<void>
+  videoId: string;
+  videoData: any;
+  currentTime: number;
+  onSeekTo: (time: number) => void;
+  messages: Message[];
+  onSendMessage: (message: string) => Promise<void>;
 }
 
-export default function ChatInterface({ 
-  videoId, 
-  videoData, 
-  currentTime, 
+export default function ChatInterface({
+  videoId,
+  videoData,
+  currentTime,
   onSeekTo,
   messages,
-  onSendMessage 
+  onSendMessage,
 }: ChatInterfaceProps) {
-  const [input, setInput] = useState("")
-  const [isLoading, setIsLoading] = useState(false)
-  const scrollAreaRef = useRef<HTMLDivElement>(null)
+  const [input, setInput] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const scrollAreaRef = useRef<HTMLDivElement>(null);
 
+  // Auto-scroll to bottom when messages change
   useEffect(() => {
-    if (scrollAreaRef.current) {
-      scrollAreaRef.current.scrollTop = scrollAreaRef.current.scrollHeight
+    // Find the scrollable viewport within the ScrollArea
+    const scrollViewport = scrollAreaRef.current?.querySelector(
+      "[data-radix-scroll-area-viewport]"
+    );
+    if (scrollViewport && messagesEndRef.current) {
+      scrollViewport.scrollTop = scrollViewport.scrollHeight;
     }
-  }, [messages])
+  }, [messages, isLoading]);
 
   const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60)
-    const secs = Math.floor(seconds % 60)
-    return `${mins}:${secs.toString().padStart(2, "0")}`
-  }
+    const mins = Math.floor(seconds / 60);
+    const secs = Math.floor(seconds % 60);
+    return `${mins}:${secs.toString().padStart(2, "0")}`;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!input.trim() || isLoading) return
+    e.preventDefault();
+    if (!input.trim() || isLoading) return;
 
-    const messageToSend = input
-    setInput("") // Clear input immediately
-    setIsLoading(true)
+    const messageToSend = input;
+    setInput(""); // Clear input immediately
+    setIsLoading(true);
 
     try {
-      await onSendMessage(messageToSend)
+      await onSendMessage(messageToSend);
     } catch (error) {
-      console.error("Error sending message:", error)
+      console.error("Error sending message:", error);
     } finally {
-      setIsLoading(false)
+      setIsLoading(false);
     }
-  }
+  };
 
   const handleNewChat = () => {
-    // You can implement this to clear chat or create new conversation
-    // For now, this could be handled by the parent component
-    console.log("New chat requested")
-  }
+    console.log("New chat requested");
+  };
 
   return (
     <div className="h-[600px] flex flex-col bg-white">
-      {/* Header */}
       <div className="flex justify-between items-center p-6 border-b border-gray-100">
         <h2 className="text-lg font-medium text-gray-900">Video Chat</h2>
         <Button
@@ -92,24 +94,22 @@ export default function ChatInterface({
         </Button>
       </div>
 
-      {/* Messages */}
       <ScrollArea className="flex-1 px-6" ref={scrollAreaRef}>
         <div className="py-6 space-y-6">
           {messages.map((message) => (
             <div key={message.id} className="space-y-4">
               {message.role === "user" ? (
-                /* User message - dark rounded rectangle */
                 <div className="flex justify-end">
                   <div className="bg-gray-900 text-white rounded-2xl px-4 py-3 max-w-[80%]">
                     <p className="text-sm leading-relaxed">{message.content}</p>
                   </div>
                 </div>
               ) : (
-                /* Assistant message - plain text */
                 <div className="space-y-4">
-                  <div className="text-gray-700 text-sm leading-relaxed max-w-[90%]">{message.content}</div>
+                  <div className="text-gray-700 text-sm leading-relaxed max-w-[90%]">
+                    {message.content}
+                  </div>
 
-                  {/* Citations */}
                   {message.citations && message.citations.length > 0 && (
                     <div className="space-y-3">
                       <div className="flex items-center gap-2 text-sm font-medium text-gray-600">
@@ -134,7 +134,6 @@ export default function ChatInterface({
             </div>
           ))}
 
-          {/* Loading indicator */}
           {isLoading && (
             <div className="text-gray-500 text-sm">
               <div className="flex items-center gap-2">
@@ -153,10 +152,11 @@ export default function ChatInterface({
               </div>
             </div>
           )}
+
+          <div ref={messagesEndRef} />
         </div>
       </ScrollArea>
 
-      {/* Input */}
       <div className="p-6 border-t border-gray-100">
         <form onSubmit={handleSubmit} className="relative">
           <Input
@@ -177,5 +177,5 @@ export default function ChatInterface({
         </form>
       </div>
     </div>
-  )
+  );
 }
