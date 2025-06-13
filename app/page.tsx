@@ -307,11 +307,12 @@ export default function LandingPage() {
               <span className="text-gray-600 text-xs sm:text-sm ml-2">© 2025 Argus, All rights reserved.</span>
             </div>
             <div className="flex items-center gap-4 sm:gap-8 text-gray-600 text-sm sm:text-base">
-              <button className="hover:text-gray-900" onClick={handleGitHub}>
-                GitHub
+              <button className="hover:text-gray-600 text-xs sm:text-sm ml-2">version '25/1 
               </button>
-              <button className="hover:text-gray-900">Privacy Policy</button>
-              <button className="hover:text-gray-900">Terms of Service</button>
+              {/* <button className="hover:text-gray-900">Privacy Policy</button> */}
+              <Link href="/terms">
+                <button className="hover:text-gray-900">Terms of Service</button>
+              </Link>
             </div>
           </div>
         </div>
