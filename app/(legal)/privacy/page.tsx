@@ -130,7 +130,7 @@ export default function PrivacyPage() {
             <h2 className="mt-6 mb-2 text-2xl font-bold">
                 Google User Data Handling
             </h2>
-            <h3 className="mt-4 mb-2 text-xl font-bold">Security Measures</h3>
+            <h4 className="mt-4 mb-2 text-xl font-bold">Security Measures</h4>
             <h4 className="mt-4 mb-2 text-xl font-bold">Technical Security</h4>
             <ul className="mb-4 list-inside list-disc">
                 <li>
