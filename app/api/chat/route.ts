@@ -108,25 +108,24 @@ export async function POST(request: NextRequest) {
     const sectionsAnalysis =
       enrichedSections.length > 0
         ? enrichedSections
-            .map(
-              (section: {
-                index: any;
-                title: any;
-                startFormatted: any;
-                endFormatted: any;
-                description: any;
-                transcript: string;
-              }) =>
-                `Section ${section.index}: "${section.title}"
+          .map(
+            (section: {
+              index: any;
+              title: any;
+              startFormatted: any;
+              endFormatted: any;
+              description: any;
+              transcript: string;
+            }) =>
+              `Section ${section.index}: "${section.title}"
 Time: ${section.startFormatted} - ${section.endFormatted}
 Description: ${section.description}
-${
-  section.transcript
-    ? `Content: ${section.transcript.substring(0, 200)}...`
-    : ""
-}`
-            )
-            .join("\n\n")
+${section.transcript
+                ? `Content: ${section.transcript.substring(0, 200)}...`
+                : ""
+              }`
+          )
+          .join("\n\n")
         : "No structured sections available";
 
     // Analyze transcript for programming concepts
@@ -136,13 +135,28 @@ ${
     const conversationContext =
       chatHistory.length > 0
         ? `Previous conversation context:\n${chatHistory
-            .slice(-4)
-            .map((msg: any) => `${msg.role}: ${msg.content}`)
-            .join("\n")}\n`
+          .slice(-4)
+          .map((msg: any) => `${msg.role}: ${msg.content}`)
+          .join("\n")}\n`
         : "";
 
     // Create the analysis-focused prompt
-    const analysisPrompt = `You are an expert video analyst specializing in programming and technical content. Your job is to thoroughly analyze "${title}" and provide detailed, accurate responses with specific timestamps.
+    const analysisPrompt = `You are an intelligent video analysis assistant specializing in programming and technical content. You excel at finding precise information and helping users learn from "${title}".
+
+Current video position: ${formatTime(currentPos)} / ${formatTime(duration)}
+
+**Tone & Communication Style:**
+- Be conversational and helpful like you're learning together
+- Use natural language: "I found", "let me check", "looks like"
+- Show genuine interest in helping users understand the content
+- Be encouraging and educational, not robotic or academic
+- Maintain technical accuracy while being approachable and friendly
+
+**Core Analysis Behavior:**
+- Take initiative to search comprehensively across the entire transcript
+- Make intelligent connections between different parts of the video
+- Proactively suggest related topics when exact matches aren't found
+- Focus on being thorough, accurate, and genuinely helpful
 
 VIDEO INFORMATION:
 Title: "${title}"
@@ -163,24 +177,28 @@ ${conversationContext}
 
 USER QUESTION: "${message}"
 
-ANALYSIS INSTRUCTIONS:
-1. THOROUGHLY search the entire transcript for the requested information.
-2. If you are provided with a keyword that is not within the video transcript. Respond with the fact that the provided transcript does not contain the word and end there. No analysis
-3. Provide EXACT timestamps (MM:SS format) for every relevant mention. Mention the correct timestamp.
-4. Include detailed context about what's discussed at each timestamp
-5. If spanning multiple sections, list ALL occurrences chronologically
-6. Distinguish between brief mentions vs detailed explanations
-7. If not found, explain what you searched for and suggest related topics that ARE covered
-8. If you see gibberish prompts, respond with the fact that it is gibberish and do not continue to do any analysis.
+**ANALYSIS INSTRUCTIONS:**
+1. **THOROUGHLY search the entire transcript** for the requested information
+2. **If keyword not in transcript:** Respond that the transcript doesn't contain the word and end there. No further analysis.
+3. **Provide EXACT timestamps (MM:SS format)** for every relevant mention with correct timing
+4. **Include detailed context** about what's discussed at each timestamp
+5. **List ALL occurrences chronologically** if spanning multiple sections
+6. **Distinguish between brief mentions vs detailed explanations**
+7. **If not found:** Explain what you searched for and suggest related topics that ARE covered
+8. **For gibberish prompts:** State it's gibberish and don't continue analysis
 
-RESPONSE FORMAT:
+**RESPONSE FORMAT:**
 - Start with a brief, friendly summary of findings
-- List specific accurate timestamps with detailed context
-- Explain the flow/progression of the topic
+- Present results naturally: **[MM:SS]** - Context of what's covered
+- Explain the flow/progression of the topic when relevant
 - Be thorough but conversational
 - Use emojis sparingly for friendliness
+- Focus on being comprehensive and accurate while maintaining a helpful tone
 
-Focus on being comprehensive and accurate while maintaining a helpful tone.`;
+**SMART SEARCH STRATEGY:**
+When content is found: Present all relevant timestamps with context and explain how the topic develops
+When content is not found: Briefly state what was searched, then suggest related available topics
+Always prioritize accuracy and completeness while staying conversational and educational.`;
 
     try {
       console.log("Performing detailed video analysis...");
