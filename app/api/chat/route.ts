@@ -3,15 +3,20 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 export async function POST(request: NextRequest) {
   try {
-    const { message, videoId, videoData, currentTime } = await request.json();
+    const {
+      message,
+      videoId,
+      videoData,
+      currentTime,
+      chatHistory = [],
+    } = await request.json();
 
     // Validate input data
     if (!message || !videoId || !videoData) {
       return NextResponse.json(
         {
           error: "Missing required data",
-          content:
-            "I'm sorry, I need more information to help you with this video.",
+          content: "I need more information to help you with this video! 🤔",
         },
         { status: 400 }
       );
@@ -23,84 +28,62 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           error: "GEMINI_API_KEY not configured",
-          content: "I'm sorry, the AI service is not properly configured.",
+          content:
+            "Sorry, I'm having trouble connecting right now. Please try again! 🔧",
         },
         { status: 500 }
       );
     }
 
-    // Initialize Gemini with optimal settings for text analysis
+    // Initialize Gemini with settings optimized for analysis
     const genAI = new GoogleGenerativeAI(apiKey);
-
     const model = genAI.getGenerativeModel({
       model: "gemini-2.0-flash-exp",
       generationConfig: {
-        temperature: 0.1, // Very low for maximum accuracy and consistency
+        temperature: 0.1, // Lower for accurate analysis
         topP: 0.8,
         topK: 40,
-        maxOutputTokens: 8192, // Maximum for detailed responses
+        maxOutputTokens: 2000, // Increased for detailed analysis
       },
     });
 
-    // Check for conversational/social messages first
-    const conversationalPatterns = [
-      /^(thank you|thanks|thx)\.?$/i,
-      /^(hello|hi|hey|yo|what's up|wassup|)\.?$/i,
-      /^(goodbye|bye|see you)\.?$/i,
-      /^(you're welcome|welcome)\.?$/i,
-      /^(ok|okay|alright)\.?$/i,
-      /^(got it|understood|makes sense)\.?$/i,
-      /^(cool|nice|great|awesome)\.?$/i,
-    ];
+    // Handle only simple conversational responses
+    const simpleConversational =
+      /^(hi|hello|hey|thanks?|thank you|bye|ok|okay)\.?$/i;
 
-    const isConversational = conversationalPatterns.some((pattern) =>
-      pattern.test(message.trim())
-    );
-
-    if (isConversational) {
-      // Handle conversational responses with proper typing
-      const conversationalResponses: Record<string, string> = {
-        "thank you":
-          "You're welcome! Feel free to ask me anything else about this video.",
-        thanks:
-          "You're welcome! I'm here if you need any more help with the video content.",
-        thx: "No problem! Let me know if you have other questions about the video.",
-        hello:
-          "Hello! I'm ready to help you analyze this video. What would you like to know?",
-        hi: "Hi there! Ask me anything about this video content.",
-        hey: "Hey! What can I help you discover in this video?",
-        goodbye:
-          "Goodbye! Feel free to come back if you have more questions about the video.",
-        bye: "See you later! Happy learning with your video content.",
-        ok: "Great! Is there anything specific you'd like to know about this video?",
-        okay: "Perfect! What else can I help you understand about this video?",
-        cool: "Glad you found it helpful! Any other questions about the video?",
-        nice: "Thanks! Let me know if you want to explore more of this video content.",
-        great:
-          "Wonderful! Feel free to ask about any other parts of the video.",
-        awesome:
-          "I'm glad I could help! What else would you like to know about this video?",
+    if (simpleConversational.test(message.trim())) {
+      const responses = {
+        hi: "Hi! What would you like to know about this video? 👋",
+        hello: "Hello! Ask me anything about the video content.",
+        hey: "Hey! Ready to analyze this video together?",
+        thanks: "Happy to help! What else would you like to explore?",
+        "thank you": "Happy to help! What else would you like to explore?",
+        bye: "See you later! 👋",
+        ok: "Great! What would you like to know about this video?",
+        okay: "Perfect! How can I help you analyze this content?",
       };
 
-      const normalizedMessage = message.toLowerCase().replace(/[.!?]/g, "");
+      const normalizedMessage = message
+        .toLowerCase()
+        .replace(/[.!?]/g, "") as keyof typeof responses;
       const response =
-        conversationalResponses[normalizedMessage] ||
-        "Thanks! Is there anything specific you'd like to know about this video?";
+        responses[normalizedMessage] || "How can I help you with this video?";
 
       return NextResponse.json({
         content: response,
         citations: [],
         model: "gemini-2.0-flash-exp",
-        analysisType: "conversational-response",
-        searchQuery: message,
+        analysisType: "conversational",
       });
     }
+
+    // Extract video data for analysis
     const title = videoData.title || "Unknown Video";
     const description = videoData.description || "No description available";
     const duration = videoData.duration || 0;
     const sections = videoData.sections || [];
     const transcript = videoData.transcript || "No transcript available";
-    const safeCurrentTime = currentTime || 0;
+    const currentPos = currentTime || 0;
 
     // Build comprehensive sections with timing analysis
     const enrichedSections = sections.map((section: any, index: number) => {
@@ -115,12 +98,8 @@ export async function POST(request: NextRequest) {
         startTime,
         endTime,
         duration: endTime - startTime,
-        startFormatted: `${Math.floor(startTime / 60)}:${(startTime % 60)
-          .toString()
-          .padStart(2, "0")}`,
-        endFormatted: `${Math.floor(endTime / 60)}:${(endTime % 60)
-          .toString()
-          .padStart(2, "0")}`,
+        startFormatted: formatTime(startTime),
+        endFormatted: formatTime(endTime),
         description: sectionDescription,
         transcript: section?.transcript || "",
       };
@@ -135,218 +114,132 @@ export async function POST(request: NextRequest) {
                 title: any;
                 startFormatted: any;
                 endFormatted: any;
-                duration: number;
                 description: any;
                 transcript: string;
               }) =>
                 `Section ${section.index}: "${section.title}"
-Time Range: ${section.startFormatted} - ${section.endFormatted} (${Math.floor(
-                  section.duration / 60
-                )}m ${section.duration % 60}s)
+Time: ${section.startFormatted} - ${section.endFormatted}
 Description: ${section.description}
 ${
   section.transcript
-    ? `Transcript Excerpt: ${section.transcript.substring(0, 300)}${
-        section.transcript.length > 300 ? "..." : ""
-      }`
+    ? `Content: ${section.transcript.substring(0, 200)}...`
     : ""
-}
----`
+}`
             )
             .join("\n\n")
         : "No structured sections available";
 
-    // Analyze transcript for programming concepts and patterns
+    // Analyze transcript for programming concepts
     const transcriptAnalysis = analyzeTranscriptPatterns(transcript);
 
-    // Create context-aware timestamps around current time
-    const contextWindow = getContextualTimestamps(
-      transcript,
-      safeCurrentTime,
-      180
-    ); // 3-minute window
+    // Build conversation context if available
+    const conversationContext =
+      chatHistory.length > 0
+        ? `Previous conversation context:\n${chatHistory
+            .slice(-4)
+            .map((msg: any) => `${msg.role}: ${msg.content}`)
+            .join("\n")}\n`
+        : "";
 
-    // Build the ultimate analysis prompt
-    const expertPrompt = `You are an expert AI video analyst with deep knowledge of programming, software development, and technical education. You excel at finding precise information in video content and providing detailed, accurate responses with exact timestamps.
+    // Create the analysis-focused prompt
+    const analysisPrompt = `You are an expert video analyst specializing in programming and technical content. Your job is to thoroughly analyze "${title}" and provide detailed, accurate responses with specific timestamps.
 
-COMPREHENSIVE VIDEO CONTEXT:
-═══════════════════════════════════════════════════════════════
+VIDEO INFORMATION:
+Title: "${title}"
+Duration: ${formatTime(duration)}
+Current Position: ${formatTime(currentPos)}
+Description: ${description}
 
-📹 TITLE: "${title}"
-⏱️ TOTAL DURATION: ${Math.floor(duration / 60)}:${(duration % 60)
-      .toString()
-      .padStart(2, "0")}
-📍 CURRENT POSITION: ${Math.floor(safeCurrentTime / 60)}:${(
-      safeCurrentTime % 60
-    )
-      .toString()
-      .padStart(2, "0")}
-📝 DESCRIPTION: ${description}
-
-STRUCTURAL ANALYSIS:
+STRUCTURED CONTENT:
 ${sectionsAnalysis}
 
-CONTENT PATTERN ANALYSIS:
+CONTENT ANALYSIS:
 ${transcriptAnalysis}
 
-CONTEXTUAL WINDOW (±3 minutes from current position):
-${contextWindow}
-
-COMPLETE TRANSCRIPT WITH TIMESTAMPS:
+FULL TRANSCRIPT:
 ${transcript}
 
-EXPERT ANALYSIS INSTRUCTIONS:
-═══════════════════════════════════════════════════════════════
+${conversationContext}
 
-🔍 SEARCH METHODOLOGY:
-1. Perform a comprehensive scan of the ENTIRE transcript
-2. Use advanced pattern matching for technical terminology and concepts
-3. Consider variations, synonyms, and related terms
-4. Analyze context around matches for relevance
-5. Cross-reference with section titles and descriptions
+USER QUESTION: "${message}"
 
-📍 TIMESTAMP PRECISION:
-1. Provide EXACT timestamps in MM:SS format for every relevant mention
-2. Include brief context for what's happening at each timestamp
-3. If a topic spans multiple timeframes, list ALL occurrences
-4. Distinguish between brief mentions vs. detailed explanations
+ANALYSIS INSTRUCTIONS:
+1. THOROUGHLY search the entire transcript for the requested information.
+2. If you are provided with a keyword that is not within the video transcript. Respond with the fact that the provided transcript does not contain the word and end there. No analysis
+3. Provide EXACT timestamps (MM:SS format) for every relevant mention. Mention the correct timestamp.
+4. Include detailed context about what's discussed at each timestamp
+5. If spanning multiple sections, list ALL occurrences chronologically
+6. Distinguish between brief mentions vs detailed explanations
+7. If not found, explain what you searched for and suggest related topics that ARE covered
+8. If you see gibberish prompts, respond with the fact that it is gibberish and do not continue to do any analysis.
 
-🧠 TECHNICAL UNDERSTANDING:
-1. Demonstrate deep understanding of programming concepts
-2. Explain the specific aspect being discussed at each timestamp
-3. Identify relationships between different parts of the content
-4. Note progressive complexity or skill building
+RESPONSE FORMAT:
+- Start with a brief, friendly summary of findings
+- List specific accurate timestamps with detailed context
+- Explain the flow/progression of the topic
+- Be thorough but conversational
+- Use emojis sparingly for friendliness
 
-💡 COMPREHENSIVE RESPONSE FORMAT:
-1. Start with a summary of findings
-2. List each relevant timestamp with detailed context
-3. Explain the progression or flow of the topic
-4. Note any visual cues mentioned in the transcript (code examples, diagrams, etc.)
-5. If the topic isn't found, explain what WAS searched and suggest related topics that ARE present
-
-SEARCH QUERY: "${message}"
-
-Provide an exhaustive analysis that demonstrates mastery of both the video content and the requested topic. Be thorough, precise, and educational in your response.`;
+Focus on being comprehensive and accurate while maintaining a helpful tone.`;
 
     try {
-      console.log("Sending optimized text-based request to Gemini API...");
+      console.log("Performing detailed video analysis...");
 
-      // Generate response using enhanced prompt
-      const result = await model.generateContent(expertPrompt);
-
-      if (!result.response) {
-        throw new Error("No response from Gemini API");
-      }
-
-      const response = result.response;
+      const result = await model.generateContent(analysisPrompt);
       let assistantResponse = "";
 
       try {
-        assistantResponse = response.text();
+        assistantResponse = result.response.text();
       } catch (textError) {
-        console.error("Error extracting text from response:", textError);
-        if (
-          response.candidates &&
-          response.candidates[0]?.content?.parts?.[0]?.text
-        ) {
-          assistantResponse = response.candidates[0].content.parts[0].text;
+        console.error("Error extracting text:", textError);
+        if (result.response.candidates?.[0]?.content?.parts?.[0]?.text) {
+          assistantResponse =
+            result.response.candidates[0].content.parts[0].text;
         } else {
-          throw new Error("Could not extract text from response");
+          throw new Error("Could not extract response text");
         }
       }
 
       if (!assistantResponse) {
         assistantResponse =
-          "I received your question but couldn't generate a response. Please try rephrasing your question.";
+          "I received your question but couldn't analyze the content. Please try rephrasing your question.";
       }
 
-      console.log("Expert-level text analysis completed successfully");
-
-      // Advanced timestamp extraction with context validation
-      const timestampRegex = /(\d{1,3}):(\d{2})/g;
-      const citations: {
-        text: string;
-        startTime: number;
-        endTime: number;
-        context?: string;
-      }[] = [];
-      let match;
-
-      while ((match = timestampRegex.exec(assistantResponse)) !== null) {
-        const minutes = Number.parseInt(match[1], 10);
-        const seconds = Number.parseInt(match[2], 10);
-        const timestamp = minutes * 60 + seconds;
-
-        if (
-          timestamp <= duration &&
-          !citations.some((c) => c.startTime === timestamp)
-        ) {
-          // Extract context around the timestamp mention
-          const beforeText = assistantResponse.substring(
-            Math.max(0, match.index - 100),
-            match.index
-          );
-          const afterText = assistantResponse.substring(
-            match.index + match[0].length,
-            Math.min(
-              assistantResponse.length,
-              match.index + match[0].length + 100
-            )
-          );
-
-          citations.push({
-            text: `${match[1]}:${match[2]}`,
-            startTime: timestamp,
-            endTime: Math.min(timestamp + 90, duration), // Longer segments for better context
-            context: (beforeText + match[0] + afterText).trim(),
-          });
-        }
-      }
+      // Extract timestamps with validation
+      const citations = extractTimestamps(assistantResponse, duration);
 
       return NextResponse.json({
         content: assistantResponse,
-        citations: citations.slice(0, 10), // Allow more citations for comprehensive analysis
+        citations: citations.slice(0, 8), // Allow comprehensive citations
         model: "gemini-2.0-flash-exp",
-        analysisType: "expert-text-analysis",
+        analysisType: "detailed-analysis",
         searchQuery: message,
         videoAnalyzed: {
           title,
-          duration: `${Math.floor(duration / 60)}:${(duration % 60)
-            .toString()
-            .padStart(2, "0")}`,
+          duration: formatTime(duration),
           sectionsCount: sections.length,
           transcriptLength: transcript.length,
         },
       });
     } catch (geminiError: any) {
-      console.error("Gemini API error details:", {
-        message: geminiError.message,
-        status: geminiError.status,
-        statusText: geminiError.statusText,
-        response: geminiError.response,
-      });
+      console.error("Gemini API error:", geminiError);
 
-      // Handle specific errors with helpful messages
       if (geminiError.message?.includes("API_KEY_INVALID")) {
         return NextResponse.json(
           {
             error: "Invalid API key",
             content:
-              "The Gemini API key is invalid. Please check your configuration.",
+              "The API configuration is invalid. Please check your setup.",
           },
           { status: 500 }
         );
       }
 
-      if (
-        geminiError.message?.includes("Too Many Requests") ||
-        geminiError.status === 429
-      ) {
+      if (geminiError.status === 429) {
         return NextResponse.json(
           {
             error: "Rate limit exceeded",
-            content:
-              "The Gemini API quota has been exceeded. Please try again later.",
+            content: "Too many requests. Please try again in a moment.",
           },
           { status: 429 }
         );
@@ -361,25 +254,20 @@ Provide an exhaustive analysis that demonstrates mastery of both the video conte
 
       return NextResponse.json(
         {
-          error: "Gemini API error",
+          error: "Analysis error",
           content:
-            "I'm having trouble connecting to the AI service. Please try again in a moment.",
+            "I encountered an error while analyzing the video. Please try again.",
         },
         { status: 500 }
       );
     }
   } catch (error: any) {
-    console.error("General error in chat route:", {
-      message: error.message,
-      stack: error.stack,
-      name: error.name,
-    });
+    console.error("General error:", error);
 
     return NextResponse.json(
       {
-        error: "Failed to process chat message",
-        content:
-          "I'm sorry, I encountered an error while processing your message. Please try again.",
+        error: "Processing error",
+        content: "Failed to process your request. Please try again.",
         details:
           process.env.NODE_ENV === "development" ? error.message : undefined,
       },
@@ -388,7 +276,13 @@ Provide an exhaustive analysis that demonstrates mastery of both the video conte
   }
 }
 
-// Helper function to analyze transcript patterns
+// Helper Functions
+function formatTime(seconds: number): string {
+  const mins = Math.floor(seconds / 60);
+  const secs = Math.floor(seconds % 60);
+  return `${mins}:${secs.toString().padStart(2, "0")}`;
+}
+
 function analyzeTranscriptPatterns(transcript: string): string {
   const patterns = {
     codeTerms: [
@@ -439,29 +333,31 @@ function analyzeTranscriptPatterns(transcript: string): string {
   }
 
   return analysis.length > 0
-    ? `Programming Terms Detected: ${analysis.join(" | ")}`
+    ? `Programming concepts detected: ${analysis.join(" | ")}`
     : "General content without specific programming terminology detected";
 }
 
-// Helper function to get contextual timestamps
-function getContextualTimestamps(
-  transcript: string,
-  currentTime: number,
-  windowSeconds: number
-): string {
-  const lines = transcript.split("\n");
-  const relevantLines = lines.filter((line) => {
-    const timestampMatch = line.match(/\[(\d+):(\d+)\]/);
-    if (timestampMatch) {
-      const lineTime =
-        Number.parseInt(timestampMatch[1]) * 60 +
-        Number.parseInt(timestampMatch[2]);
-      return Math.abs(lineTime - currentTime) <= windowSeconds;
-    }
-    return false;
-  });
+function extractTimestamps(response: string, maxDuration: number) {
+  const timestampRegex = /(\d{1,3}):(\d{2})/g;
+  const citations: { text: string; startTime: number; endTime: number }[] = [];
+  let match;
 
-  return relevantLines.length > 0
-    ? `Context around current time:\n${relevantLines.slice(0, 10).join("\n")}`
-    : "No timestamped content available around current position";
+  while ((match = timestampRegex.exec(response)) !== null) {
+    const minutes = parseInt(match[1], 10);
+    const seconds = parseInt(match[2], 10);
+    const timestamp = minutes * 60 + seconds;
+
+    if (
+      timestamp <= maxDuration &&
+      !citations.some((c) => c.startTime === timestamp)
+    ) {
+      citations.push({
+        text: `${match[1]}:${match[2]}`,
+        startTime: timestamp,
+        endTime: Math.min(timestamp + 60, maxDuration),
+      });
+    }
+  }
+
+  return citations;
 }
