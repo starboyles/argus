@@ -10,7 +10,7 @@ export default function HelpPage() {
     <div className="container mx-auto px-4 py-8 max-w-2xl">
       <h1 className="mb-4 text-3xl font-bold">Help & Support</h1>
 
-      <div className="mb-8 flex items-center gap-2 text-sm text-gray-600">
+      <div className="mb-8 flex items-center gap-2 text-gray-600">
         <span>Need help? We're here for you</span>
       </div>
 
