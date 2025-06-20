@@ -82,8 +82,61 @@ export async function POST(request: NextRequest) {
     const description = videoData.description || "No description available";
     const duration = videoData.duration || 0;
     const sections = videoData.sections || [];
-    const transcript = videoData.transcript || "No transcript available";
     const currentPos = currentTime || 0;
+
+    
+    let realTranscript = videoData.transcript || "No transcript available";
+
+    // Check if we have a real transcript or just a placeholder
+    if (!realTranscript || 
+        realTranscript.includes("Transcript for") || 
+        realTranscript.includes("Video transcript and analysis") ||
+        realTranscript.length < 1000) {
+      
+      try {
+        console.log("Getting fresh transcript for chat analysis...");
+        
+        // Try Python backend first
+        const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'http://localhost:5000';
+        const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
+        
+        const transcriptResponse = await fetch(`${PYTHON_BACKEND_URL}/transcript`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ url: youtubeUrl }),
+          signal: AbortSignal.timeout(10000) // 10 second timeout
+        });
+
+        if (transcriptResponse.ok) {
+          const transcriptResult = await transcriptResponse.json();
+          if (transcriptResult.success && transcriptResult.data) {
+            realTranscript = transcriptResult.data.transcript;
+            console.log(`✅ Fresh transcript for chat: ${realTranscript.length} characters`);
+          }
+        } else {
+          throw new Error("Python backend failed");
+        }
+        
+      } catch (pythonError) {
+        console.warn("Python backend failed, trying JavaScript fallback...");
+        
+        // Fallback to JavaScript library
+        try {
+          const { YoutubeTranscript } = await import("youtube-transcript");
+          const transcriptData = await YoutubeTranscript.fetchTranscript(videoId);
+          realTranscript = transcriptData.map(item => item.text).join(' ');
+          console.log(`✅ Fallback transcript for chat: ${realTranscript.length} characters`);
+        } catch (fallbackError) {
+          console.error("Both transcript methods failed:", fallbackError);
+          realTranscript = "Transcript not available for detailed analysis";
+        }
+      }
+    } else {
+      console.log(`✅ Using existing transcript: ${realTranscript.length} characters`);
+    }
+
+    // Now use the real transcript for analysis
+    const transcript = realTranscript;
 
     // Build comprehensive sections with timing analysis
     const enrichedSections = sections.map((section: any, index: number) => {
@@ -163,6 +216,7 @@ Title: "${title}"
 Duration: ${formatTime(duration)}
 Current Position: ${formatTime(currentPos)}
 Description: ${description}
+Transcript Length: ${transcript.length} characters
 
 STRUCTURED CONTENT:
 ${sectionsAnalysis}
