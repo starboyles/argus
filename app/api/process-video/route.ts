@@ -1,6 +1,18 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { GoogleGenerativeAI } from "@google/generative-ai";
-import { YoutubeTranscript } from "youtube-transcript";
+
+// Python backend URL
+const PYTHON_BACKEND_URL =
+  process.env.PYTHON_BACKEND_URL || "http://localhost:5000";
+
+interface TranscriptData {
+  video_id: string;
+  transcript: string;
+  length: number;
+  snippet_count: number;
+  language: string;
+  is_generated: boolean | null;
+}
 
 export async function POST(request: NextRequest) {
   try {
@@ -59,16 +71,81 @@ export async function POST(request: NextRequest) {
         }
       }
 
-      // Get transcript
+      // Get transcript from Python backend
       let transcript = "";
+      let transcriptMeta: Partial<TranscriptData> = {};
+
       try {
-        const transcriptData = await YoutubeTranscript.fetchTranscript(videoId);
-        transcript = transcriptData
-          .map((item) => `[${formatTime(item.offset / 1000)}] ${item.text}`)
-          .join("\n");
+        console.log("Fetching transcript from Python backend...");
+
+        // Check if Python backend is healthy
+        const healthResponse = await fetch(`${PYTHON_BACKEND_URL}/health`, {
+          method: "GET",
+          signal: AbortSignal.timeout(5000), // 5 second timeout
+        });
+
+        if (!healthResponse.ok) {
+          throw new Error("Python backend is not responding");
+        }
+
+        // Get transcript using the YouTube URL
+        const youtubeUrl = url || `https://www.youtube.com/watch?v=${videoId}`;
+
+        const transcriptResponse = await fetch(
+          `${PYTHON_BACKEND_URL}/transcript`,
+          {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify({ url: youtubeUrl }),
+            signal: AbortSignal.timeout(30000), // 30 second timeout for transcript
+          }
+        );
+
+        if (transcriptResponse.ok) {
+          const transcriptResult = await transcriptResponse.json();
+
+          if (transcriptResult.success && transcriptResult.data) {
+            transcriptMeta = transcriptResult.data;
+            transcript = transcriptResult.data.transcript;
+            console.log(
+              `✅ Transcript fetched: ${transcript.length} characters, ${transcriptMeta.snippet_count} snippets`
+            );
+          } else {
+            throw new Error(
+              transcriptResult.error ||
+              "Failed to get transcript from Python backend"
+            );
+          }
+        } else {
+          const errorData = await transcriptResponse.json();
+          throw new Error(
+            errorData.error || "Python backend transcript request failed"
+          );
+        }
       } catch (transcriptError) {
-        console.warn("Could not fetch transcript:", transcriptError);
-        transcript = "Transcript not available for this video";
+        console.warn("Python backend transcript error:", transcriptError);
+
+        // Fallback: try JavaScript library as backup
+        try {
+          console.log("Falling back to JavaScript transcript library...");
+          const { YoutubeTranscript } = await import("youtube-transcript");
+          const transcriptData = await YoutubeTranscript.fetchTranscript(
+            videoId
+          );
+          transcript = transcriptData
+            .map((item) => `[${formatTime(item.offset / 1000)}] ${item.text}`)
+            .join("\n");
+          console.log("✅ Fallback transcript successful");
+        } catch (fallbackError) {
+          console.warn(
+            "JavaScript transcript fallback also failed:",
+            fallbackError
+          );
+          transcript =
+            "Transcript not available for this video - both Python backend and JavaScript fallback failed";
+        }
       }
 
       // Extract representative frames for analysis
@@ -110,17 +187,21 @@ export async function POST(request: NextRequest) {
 Video Title: ${videoMetadata.title}
 Video Description: ${videoMetadata.description}
 Duration: ${Math.floor(videoMetadata.duration / 60)}:${(
-          videoMetadata.duration % 60
-        )
-          .toString()
-          .padStart(2, "0")}
+            videoMetadata.duration % 60
+          )
+            .toString()
+            .padStart(2, "0")}
+
+Transcript Quality: ${transcriptMeta.length
+            ? `${transcriptMeta.length} characters, ${transcriptMeta.snippet_count} segments, Language: ${transcriptMeta.language}, Generated: ${transcriptMeta.is_generated}`
+            : "Standard quality"
+          }
 
 Transcript:
 ${transcript}
 
-${
-  keyFrames.length > 0
-    ? `
+${keyFrames.length > 0
+            ? `
 VISUAL ANALYSIS:
 I'm providing ${keyFrames.length} key frames from this video. Analyze these images to understand:
 - Visual content and presentation style
@@ -132,18 +213,16 @@ I'm providing ${keyFrames.length} key frames from this video. Analyze these imag
 MULTIMODAL ANALYSIS INSTRUCTIONS:
 Combine the transcript with visual evidence to provide:
 `
-    : "TRANSCRIPT-ONLY ANALYSIS:\n"
-}
+            : "TRANSCRIPT-ONLY ANALYSIS:\n"
+          }
 
 1. A comprehensive analysis of the video content
 2. 5-7 logical sections with timestamps, titles, and descriptions
-3. Key topics and themes discussed${
-          keyFrames.length > 0 ? " (including visual elements)" : ""
-        }
+3. Key topics and themes discussed${keyFrames.length > 0 ? " (including visual elements)" : ""
+          }
 4. Important moments or transitions in the content
-5. Technical concepts covered${
-          keyFrames.length > 0 ? " (both spoken and visually demonstrated)" : ""
-        }
+5. Technical concepts covered${keyFrames.length > 0 ? " (both spoken and visually demonstrated)" : ""
+          }
 
 Format your response as JSON with this structure:
 {
@@ -176,8 +255,7 @@ Format your response as JSON with this structure:
       }
 
       console.log(
-        `Analyzing video with ${
-          keyFrames.length > 0 ? "multimodal" : "text-only"
+        `Analyzing video with ${keyFrames.length > 0 ? "multimodal" : "text-only"
         } Gemini: ${videoMetadata.title}`
       );
 
@@ -251,6 +329,10 @@ Format your response as JSON with this structure:
         aiModel: "gemini-2.0-flash-exp",
         analysisType: keyFrames.length > 0 ? "multimodal" : "text-only",
         framesAnalyzed: keyFrames.length,
+        transcriptSource: transcriptMeta.length
+          ? "python-backend"
+          : "javascript-fallback",
+        transcriptMeta: transcriptMeta,
       };
 
       return NextResponse.json(processedVideoData);
@@ -306,16 +388,16 @@ function generateFallbackSections(
       i === 0
         ? "Introduction & Overview"
         : i === sectionCount - 1
-        ? "Conclusion & Summary"
-        : `Key Topic ${i}`,
+          ? "Conclusion & Summary"
+          : `Key Topic ${i}`,
     startTime: Math.floor(i * sectionDuration),
     endTime: Math.floor((i + 1) * sectionDuration),
     description:
       i === 0
         ? "Opening segment with introduction"
         : i === sectionCount - 1
-        ? "Closing segment with conclusions"
-        : `Main content discussion part ${i}`,
+          ? "Closing segment with conclusions"
+          : `Main content discussion part ${i}`,
   }));
 }
 
