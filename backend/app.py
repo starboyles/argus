@@ -8,7 +8,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)  # Enable CORS for Next.js frontend
+CORS(app, origins=["*"])  # Enable CORS for Next.js frontend
 
 def extract_video_id(url):
     """Extract video ID from various YouTube URL formats"""
