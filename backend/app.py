@@ -25,29 +25,12 @@ def extract_video_id(url):
     # If no pattern matches, assume it's already a video ID
     return url
 
-@app.route('/', methods=['GET'])
-def root():
-    """Root endpoint to verify the app is running"""
-    return jsonify({
-        'status': 'running',
-        'message': 'Argus Python Backend API',
-        'endpoints': {
-            'health': '/health',
-            'transcript': '/transcript (POST)',
-            'transcript_by_id': '/transcript/<video_id> (GET)'
-        }
-    })
-
 @app.route('/health', methods=['GET'])
 def health_check():
     return jsonify({'status': 'healthy', 'message': 'Python backend is running'})
 
-@app.route('/transcript', methods=['POST', 'OPTIONS'])
+@app.route('/transcript', methods=['POST'])
 def get_transcript():
-    # Handle preflight OPTIONS request
-    if request.method == 'OPTIONS':
-        return '', 204
-        
     try:
         data = request.get_json()
         
@@ -66,20 +49,21 @@ def get_transcript():
                 'error': 'Invalid YouTube URL format'
             }), 400
         
-        # Fetch transcript using the CORRECT API method
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
+        # Fetch transcript using the API
+        ytt_api = YouTubeTranscriptApi()
+        fetched_transcript = ytt_api.fetch(video_id)
         
         # Combine all transcript snippets into complete text
-        complete_transcript = " ".join([item['text'] for item in transcript_list])
+        complete_transcript = " ".join([snippet.text for snippet in fetched_transcript])
         
         # Get additional metadata
         transcript_data = {
             'video_id': video_id,
             'transcript': complete_transcript,
             'length': len(complete_transcript),
-            'snippet_count': len(transcript_list),
-            'language': 'en',  # You can also try to detect this from available transcripts
-            'is_generated': None  # This info isn't directly available
+            'snippet_count': len(fetched_transcript),
+            'language': fetched_transcript.language if hasattr(fetched_transcript, 'language') else 'en',
+            'is_generated': fetched_transcript.is_generated if hasattr(fetched_transcript, 'is_generated') else None
         }
         
         return jsonify({
@@ -97,9 +81,9 @@ def get_transcript():
 def get_transcript_by_id(video_id):
     """Alternative endpoint that accepts video ID directly"""
     try:
-        # Use the CORRECT static method
-        transcript_list = YouTubeTranscriptApi.get_transcript(video_id)
-        complete_transcript = " ".join([item['text'] for item in transcript_list])
+        ytt_api = YouTubeTranscriptApi()
+        fetched_transcript = ytt_api.fetch(video_id)
+        complete_transcript = " ".join([snippet.text for snippet in fetched_transcript])
         
         return jsonify({
             'success': True,
