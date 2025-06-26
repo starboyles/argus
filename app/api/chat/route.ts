@@ -97,7 +97,7 @@ export async function POST(request: NextRequest) {
         console.log("Getting fresh transcript for chat analysis...");
         
         // Try Python backend first
-        const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'https://argus-production-8b41.up.railway.app';
+        const PYTHON_BACKEND_URL = process.env.PYTHON_BACKEND_URL || 'https://argus-0y91.onrender.com/';
         const youtubeUrl = `https://www.youtube.com/watch?v=${videoId}`;
         
         const transcriptResponse = await fetch(`${PYTHON_BACKEND_URL}/transcript`, {
