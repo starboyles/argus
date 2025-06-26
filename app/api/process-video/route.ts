@@ -3,7 +3,7 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Python backend URL
 const PYTHON_BACKEND_URL =
-  process.env.PYTHON_BACKEND_URL || "https://argus-production-8b41.up.railway.app";
+  process.env.PYTHON_BACKEND_URL || "https://argus-0y91.onrender.com/";
 
 interface TranscriptData {
   video_id: string;
